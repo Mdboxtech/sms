@@ -1,0 +1,377 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, Link } from '@inertiajs/react';
+import {
+    ArrowLeftIcon,
+    UserIcon,
+    BookOpenIcon,
+    AcademicCapIcon,
+    CalendarIcon,
+    IdentificationIcon,
+    AcademicCapIcon as QualificationIcon
+} from '@heroicons/react/24/outline';
+import Card from '@/Components/UI/Card';
+import { router } from '@inertiajs/react';
+import { Inertia } from '@inertiajs/inertia';
+
+export default function ShowTeacher({ auth, teacher }) {
+    const handleRemoveSubject = (subjectId, subjectName) => {
+        if (confirm(`Remove ${subjectName} from this teacher?`)) {
+            router.post(route('admin.teachers.remove.subject'), {
+                teacher_id: teacher.id,
+                subject_id: subjectId
+            });
+        }
+    };
+
+    const handleRemoveClassroom = (classroomId, classroomName) => {
+        if (confirm(`Remove ${classroomName} from this teacher?`)) {
+            router.post(route('admin.teachers.remove.classroom'), {
+                teacher_id: teacher.id,
+                classroom_id: classroomId
+            });
+        }
+    };
+
+    return (
+        <AuthenticatedLayout>
+            <Head title={`${teacher.user.name} - Teacher Details`} />
+            <div className="py-8">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="flex items-center mb-6">
+                        <Link
+                            href={route('admin.teachers.index')}
+                            className="mr-4 flex items-center text-indigo-600 hover:text-indigo-900"
+                        >
+                            <ArrowLeftIcon className="h-4 w-4 mr-1" />
+                            Back to Teachers
+                        </Link>
+                        <h1 className="text-2xl font-bold text-gray-900">Teacher Details</h1>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Profile Card */}
+                        <Card>
+                            <div className="flex flex-col items-center p-6">
+                                <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
+                                    <UserIcon className="h-12 w-12 text-indigo-600" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-gray-900">{teacher.user.name}</h2>
+                                <p className="text-gray-600">{teacher.user.email}</p>
+                                
+                                <div className="w-full mt-6 space-y-4">
+                                    <div className="flex items-center">
+                                        <IdentificationIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-sm font-medium text-gray-500 mr-2">Employee ID:</span>
+                                        <span className="text-sm text-gray-900">{teacher.employee_id}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center">
+                                        <QualificationIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-sm font-medium text-gray-500 mr-2">Qualification:</span>
+                                        <span className="text-sm text-gray-900">{teacher.qualification || 'N/A'}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center">
+                                        <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-sm font-medium text-gray-500 mr-2">Date Joined:</span>
+                                        <span className="text-sm text-gray-900">{teacher.date_joined || 'N/A'}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-6 w-full">
+                                    <Link
+                                        href={route('admin.teachers.edit', teacher.id)}
+                                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                                    >
+                                        Edit Profile
+                                    </Link>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Subjects Card */}
+                        <Card>
+                            <div className="p-6">
+                                <div className="mb-4 flex justify-between items-center">
+                                    <h3 className="text-lg font-semibold text-gray-900">Assigned Subjects</h3>
+                                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                        {teacher.subjects.length} Subjects
+                                    </span>
+                                </div>
+                                
+                                {teacher.subjects.length === 0 ? (
+                                    <div className="text-center py-6">
+                                        <BookOpenIcon className="mx-auto h-10 w-10 text-gray-400" />
+                                        <p className="mt-2 text-sm text-gray-500">No subjects assigned yet</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {teacher.subjects.map((subject) => (
+                                            <div key={subject.id} className="border rounded-md p-3 hover:bg-gray-50">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900">{subject.name}</h4>
+                                                        <p className="text-sm text-gray-500">{subject.code}</p>
+                                                        {subject.classrooms && subject.classrooms.length > 0 && (
+                                                            <div className="mt-1 flex flex-wrap gap-1">
+                                                                {subject.classrooms.map((classroom) => (
+                                                                    <Link
+                                                                        key={classroom.id}
+                                                                        href={route('admin.classrooms.show', classroom.id)}
+                                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                                                    >
+                                                                        {classroom.name}
+                                                                    </Link>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Link
+                                                            href={route('admin.subjects.show', subject.id)}
+                                                            className="text-indigo-600 hover:text-indigo-900"
+                                                        >
+                                                            View
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleRemoveSubject(subject.id, subject.name)}
+                                                            className="text-xs text-red-600 hover:text-red-900"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+
+                        {/* Classes Card */}
+                        <Card>
+                            <div className="p-6">
+                                <div className="mb-4 flex justify-between items-center">
+                                    <h3 className="text-lg font-semibold text-gray-900">Assigned Classes</h3>
+                                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                        {teacher.classrooms.length} Classes
+                                    </span>
+                                </div>
+                                
+                                {teacher.classrooms.length === 0 ? (
+                                    <div className="text-center py-6">
+                                        <AcademicCapIcon className="mx-auto h-10 w-10 text-gray-400" />
+                                        <p className="mt-2 text-sm text-gray-500">No classes assigned yet</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {teacher.classrooms.map((classroom) => (
+                                            <div key={classroom.id} className="border rounded-md p-3 hover:bg-gray-50">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900">{classroom.name}</h4>
+                                                        <p className="text-sm text-gray-500">
+                                                            {classroom.students_count || 0} students
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {classroom.subjects_count || 0} subjects
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Link
+                                                            href={route('admin.classrooms.show', classroom.id)}
+                                                            className="text-indigo-600 hover:text-indigo-900"
+                                                        >
+                                                            View
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleRemoveClassroom(classroom.id, classroom.name)}
+                                                            className="text-xs text-red-600 hover:text-red-900"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+                    </div>
+                        {/* Teacher Profile Card */}
+                        <Card>
+                            <div className="flex flex-col items-center">
+                                <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
+                                    <UserIcon className="h-12 w-12 text-indigo-600" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-gray-900">{teacher.user.name}</h2>
+                                <p className="text-gray-600">{teacher.user.email}</p>
+                                
+                                <div className="w-full mt-6 space-y-4">
+                                    <div className="flex items-center">
+                                        <IdentificationIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-sm font-medium text-gray-500 mr-2">Employee ID:</span>
+                                        <span className="text-sm text-gray-900">{teacher.employee_id}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center">
+                                        <QualificationIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-sm font-medium text-gray-500 mr-2">Qualification:</span>
+                                        <span className="text-sm text-gray-900">{teacher.qualification || 'N/A'}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center">
+                                        <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-sm font-medium text-gray-500 mr-2">Date Joined:</span>
+                                        <span className="text-sm text-gray-900">{teacher.date_joined || 'N/A'}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-6 w-full">
+                                    <Link
+                                        href={route('admin.teachers.edit', teacher.id)}
+                                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                                    >
+                                        Edit Profile
+                                    </Link>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Assigned Subjects Card */}
+                        <Card>
+                            <div className="mb-4 flex justify-between items-center">
+                                <h3 className="text-lg font-semibold text-gray-900">Assigned Subjects</h3>
+                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                    {teacher.subjects.length} Subjects
+                                </span>
+                            </div>
+                            
+                            {teacher.subjects.length === 0 ? (
+                                <div className="text-center py-6">
+                                    <BookOpenIcon className="mx-auto h-10 w-10 text-gray-400" />
+                                    <p className="mt-2 text-sm text-gray-500">No subjects assigned yet</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {teacher.subjects.map((subject) => (
+                                        <div key={subject.id} className="border rounded-md p-3 hover:bg-gray-50">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900">{subject.name}</h4>
+                                                    <p className="text-sm text-gray-500">{subject.code}</p>
+                                                    {subject.classrooms && subject.classrooms.length > 0 && (
+                                                        <div className="mt-1 flex flex-wrap gap-1">
+                                                            {subject.classrooms.map((classroom) => (
+                                                                <span
+                                                                    key={classroom.id}
+                                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                                >
+                                                                    {classroom.name}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <Link
+                                                        href={route('admin.subjects.show', subject.id)}
+                                                        className="text-indigo-600 hover:text-indigo-900"
+                                                    >
+                                                        View
+                                                    </Link>
+                                                    <form
+                                                        action={route('admin.teachers.remove.subject')}
+                                                        method="POST"
+                                                        onSubmit={(e) => {
+                                                            e.preventDefault();
+                                                            if (confirm(`Remove ${subject.name} from this teacher?`)) {
+                                                            e.target.submit();
+                                                        }
+                                                    }}
+                                                >
+                                                    <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]').getAttribute('content')} />
+                                                    <input type="hidden" name="teacher_id" value={teacher.id} />
+                                                    <input type="hidden" name="subject_id" value={subject.id} />
+                                                    <button
+                                                        type="submit"
+                                                        className="text-xs text-red-600 hover:text-red-900"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            <div className="mt-2 text-xs text-gray-500">
+                                                {subject.classroom ? (
+                                                    <span>Class: {subject.classroom.name}</span>
+                                                ) : (
+                                                    <span>No class assigned</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+
+                        {/* Assigned Classes Card */}
+                        <Card>
+                            <div className="mb-4 flex justify-between items-center">
+                                <h3 className="text-lg font-semibold text-gray-900">Assigned Classes</h3>
+                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                    {teacher.classrooms.length} Classes
+                                </span>
+                            </div>
+                            
+                            {teacher.classrooms.length === 0 ? (
+                                <div className="text-center py-6">
+                                    <AcademicCapIcon className="mx-auto h-10 w-10 text-gray-400" />
+                                    <p className="mt-2 text-sm text-gray-500">No classes assigned yet</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {teacher.classrooms.map((classroom) => (
+                                        <div key={classroom.id} className="border rounded-md p-3 hover:bg-gray-50">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900">{classroom.name}</h4>
+                                                    <p className="text-sm text-gray-500">
+                                                        {classroom.students_count || 0} students
+                                                    </p>
+                                                </div>
+                                                <form
+                                                    action={route('admin.teachers.remove.classroom')}
+                                                    method="POST"
+                                                    onSubmit={(e) => {
+                                                        e.preventDefault();
+                                                        if (confirm(`Remove ${classroom.name} from this teacher?`)) {
+                                                            e.target.submit();
+                                                        }
+                                                    }}
+                                                >
+                                                    <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]').getAttribute('content')} />
+                                                    <input type="hidden" name="teacher_id" value={teacher.id} />
+                                                    <input type="hidden" name="classroom_id" value={classroom.id} />
+                                                    <button
+                                                        type="submit"
+                                                        className="text-xs text-red-600 hover:text-red-900"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            <div className="mt-2 text-xs text-gray-500">
+                                                {classroom.subjects_count || 0} subjects
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}
