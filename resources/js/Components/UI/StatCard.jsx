@@ -1,6 +1,6 @@
 export default function StatCard({ title, value, icon: Icon, trend = null, className = '' }) {
     return (
-        <div className={`bg-white overflow-hidden shadow-sm sm:rounded-lg ${className}`}>
+        <div className={`bg-white border border-gray-200 shadow-sm sm:rounded-lg ${className}`}>
             <div className="p-6">
                 <div className="flex items-center justify-between">
                     <div>

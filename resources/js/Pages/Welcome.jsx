@@ -1,21 +1,22 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { GraduationCap, Users, BookOpen, Calendar, Award, Bell, ChevronRight, Menu, X } from 'lucide-react';
+import Button from '@/Components/UI/Button';
 
-export default function Welcome({ auth, laravelVersion, phpVersion }) {
+export default function Welcome({ auth, laravelVersion, phpVersion, appSettings }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Customizable school configuration - modify these for different schools
+    // Use dynamic school configuration from settings
     const schoolConfig = {
-        name: "Excellence Academy",
-        logo: "/images/school-logo.png", // Replace with actual logo path
-        tagline: "Nurturing Minds, Building Futures",
-        primaryColor: "#2563eb", // Blue - change to school colors
-        secondaryColor: "#f59e0b", // Amber
+        name: appSettings?.school_name || "Excellence Academy",
+        logo: appSettings?.school_logo ? `/storage/${appSettings.school_logo}` : "/images/school-logo.png",
+        tagline: appSettings?.school_tagline || "Nurturing Minds, Building Futures",
+        primaryColor: appSettings?.school_colors?.primary || "#2563eb",
+        secondaryColor: appSettings?.school_colors?.secondary || "#f59e0b",
         heroImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-        phone: "+1 (555) 123-4567",
-        email: "info@excellenceacademy.edu",
-        address: "123 Education Street, Learning City, LC 12345"
+        phone: appSettings?.school_phone || "+1 (555) 123-4567",
+        email: appSettings?.school_email || "info@excellenceacademy.edu",
+        address: appSettings?.school_address || "123 Education Street, Learning City, LC 12345"
     };
 
     const quickActions = [
@@ -96,13 +97,15 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                             {/* Desktop Navigation */}
                             <nav className="hidden md:flex items-center space-x-6">
                                 {auth.user ? (
-                                    <Link
+                                    <Button
+                                        as={Link}
                                         href={route('admin.dashboard')}
-                                        className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                        variant="primary"
+                                        className="flex items-center"
                                     >
                                         Dashboard
                                         <ChevronRight className="ml-1 h-4 w-4" />
-                                    </Link>
+                                    </Button>
                                 ) : (
                                     <div className="flex items-center space-x-4">
                                         <Link
@@ -111,12 +114,13 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                         >
                                             Sign In
                                         </Link>
-                                        <Link
+                                        <Button
+                                            as={Link}
                                             href={route('register')}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                            variant="primary"
                                         >
                                             Get Started
-                                        </Link>
+                                        </Button>
                                     </div>
                                 )}
                             </nav>
@@ -135,12 +139,14 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                             <div className="md:hidden py-4 border-t border-gray-200">
                                 <div className="flex flex-col space-y-3">
                                     {auth.user ? (
-                                        <Link
+                                        <Button
+                                            as={Link}
                                             href={route('admin.dashboard')}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors text-center"
+                                            variant="primary"
+                                            className="text-center"
                                         >
                                             Dashboard
-                                        </Link>
+                                        </Button>
                                     ) : (
                                         <>
                                             <Link
@@ -149,12 +155,14 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                             >
                                                 Sign In
                                             </Link>
-                                            <Link
+                                            <Button
+                                                as={Link}
                                                 href={route('register')}
-                                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors text-center"
+                                                variant="primary"
+                                                className="text-center"
                                             >
                                                 Get Started
-                                            </Link>
+                                            </Button>
                                         </>
                                     )}
                                 </div>
@@ -178,18 +186,24 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                                     {!auth.user && (
                                         <>
-                                            <Link
+                                            <Button
+                                                as={Link}
                                                 href={route('register')}
-                                                className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 text-center"
+                                                variant="primary"
+                                                size="lg"
+                                                className="text-center transform hover:scale-105 transition-all duration-200"
                                             >
                                                 Get Started Today
-                                            </Link>
-                                            <Link
+                                            </Button>
+                                            <Button
+                                                as={Link}
                                                 href={route('login')}
-                                                className="px-8 py-4 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all duration-200 text-center"
+                                                variant="outline"
+                                                size="lg"
+                                                className="text-center"
                                             >
                                                 Sign In
-                                            </Link>
+                                            </Button>
                                         </>
                                     )}
                                 </div>

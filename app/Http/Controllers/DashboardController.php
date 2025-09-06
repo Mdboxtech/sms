@@ -85,7 +85,17 @@ class DashboardController extends Controller
         }
         
         $teacherSubjects = $teacher->subjects ?? collect();
-        $teacherClasses = $teacher->classrooms ?? collect();
+        
+        // Get classrooms through subjects
+        $teacherClasses = $teacherSubjects->count() > 0 
+            ? $teacher->subjects()
+                ->with('classrooms.students.user')
+                ->get()
+                ->pluck('classrooms')
+                ->flatten()
+                ->unique('id')
+                ->values()
+            : collect();
         
         return [
             'metrics' => [
@@ -102,7 +112,7 @@ class DashboardController extends Controller
                 ->latest()
                 ->take(5)
                 ->get(),
-            'my_classes' => $teacherClasses->load(['students.user']),
+            'my_classes' => $teacherClasses,
             'my_subjects' => $teacherSubjects
         ];
     }
@@ -123,23 +133,36 @@ class DashboardController extends Controller
                 'result_history' => collect()
             ];
         }
+
+        // Get current academic session and term
+        $currentSession = \App\Models\AcademicSession::where('is_current', true)->first();
+        $currentTerm = null;
+        if ($currentSession) {
+            $currentTerm = \App\Models\Term::where('academic_session_id', $currentSession->id)
+                ->where('is_current', true)
+                ->first();
+        }
+
+        $currentResults = collect();
+        if ($currentTerm) {
+            $currentResults = Result::where('student_id', $student->id)
+                ->where('term_id', $currentTerm->id)
+                ->with(['subject', 'term.academicSession'])
+                ->get();
+        }
         
         return [
             'student_info' => [
                 'classroom' => $student->classroom?->name ?? 'Not Assigned',
                 'admission_number' => $student->admission_number ?? 'N/A',
-                'current_term' => $student->classroom?->currentTerm?->name ?? 'Not Set',
-                'current_session' => $student->classroom?->currentTerm?->academicSession?->name ?? 'Not Set'
+                'current_term' => $currentTerm?->name ?? 'Not Set',
+                'current_session' => $currentSession?->name ?? 'Not Set'
             ],
-            'current_results' => Result::where('student_id', $student->id)
-                ->whereHas('term', function($query) use ($student) {
-                    $query->where('id', $student->classroom?->current_term_id);
-                })
-                ->with(['subject', 'term.academicSession'])
-                ->get(),
+            'current_results' => $currentResults,
             'result_history' => Result::where('student_id', $student->id)
                 ->with(['subject', 'term.academicSession'])
                 ->latest()
+                ->take(10)
                 ->get()
                 ->groupBy('term.name')
         ];

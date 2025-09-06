@@ -5,25 +5,51 @@ namespace App\Services;
 use App\Models\Result;
 use App\Models\Student;
 use App\Models\Term;
+use App\Models\TermResult;
+use App\Models\AcademicSession;
+use App\Models\Classroom;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ReportCardService
 {
     public function calculateGrade($score)
     {
-        if ($score >= 70) {
-            return ['grade' => 'A', 'remark' => 'Excellent'];
+        if ($score >= 90) {
+            return ['grade' => 'A+', 'remark' => 'Outstanding', 'points' => 5.0];
+        } elseif ($score >= 80) {
+            return ['grade' => 'A', 'remark' => 'Excellent', 'points' => 4.5];
+        } elseif ($score >= 70) {
+            return ['grade' => 'B+', 'remark' => 'Very Good', 'points' => 4.0];
         } elseif ($score >= 60) {
-            return ['grade' => 'B', 'remark' => 'Very Good'];
+            return ['grade' => 'B', 'remark' => 'Good', 'points' => 3.5];
         } elseif ($score >= 50) {
-            return ['grade' => 'C', 'remark' => 'Good'];
+            return ['grade' => 'C+', 'remark' => 'Fair', 'points' => 3.0];
         } elseif ($score >= 45) {
-            return ['grade' => 'D', 'remark' => 'Fair'];
+            return ['grade' => 'C', 'remark' => 'Satisfactory', 'points' => 2.5];
         } elseif ($score >= 40) {
-            return ['grade' => 'E', 'remark' => 'Pass'];
+            return ['grade' => 'D', 'remark' => 'Pass', 'points' => 2.0];
         } else {
-            return ['grade' => 'F', 'remark' => 'Fail'];
+            return ['grade' => 'F', 'remark' => 'Fail', 'points' => 0.0];
         }
+    }
+
+    public function calculateGPA($results)
+    {
+        if (empty($results)) {
+            return 0.0;
+        }
+
+        $totalPoints = 0;
+        $totalSubjects = count($results);
+
+        foreach ($results as $result) {
+            $gradeInfo = $this->calculateGrade($result->total_score);
+            $totalPoints += $gradeInfo['points'];
+        }
+
+        return round($totalPoints / $totalSubjects, 2);
     }
 
     public function calculateAverage($results)
@@ -86,45 +112,145 @@ class ReportCardService
     {
         $results = Result::where('student_id', $student->id)
             ->where('term_id', $term->id)
-            ->with(['subject', 'term.academicSession'])
+            ->with(['subject', 'term.academicSession', 'teacher.user'])
+            ->orderBy('subject_id')
             ->get();
 
-        // Get or create term result
-        $termResult = \App\Models\TermResult::firstOrCreate(
+        if ($results->isEmpty()) {
+            throw new \Exception('No results found for this student in the specified term.');
+        }
+
+        // Calculate comprehensive statistics
+        $totalScore = $results->sum('total_score');
+        $averageScore = $results->avg('total_score');
+        $highestScore = $results->max('total_score');
+        $lowestScore = $results->min('total_score');
+        $gpa = $this->calculateGPA($results);
+
+        // Get or create/update term result
+        $termResult = TermResult::updateOrCreate(
             [
                 'student_id' => $student->id,
                 'term_id' => $term->id,
             ],
             [
                 'classroom_id' => $student->classroom_id,
-                'average_score' => $results->avg('total_score'),
-                'position' => $this->calculatePosition($student->id, $term->id, $student->classroom_id)
+                'average_score' => round($averageScore, 2),
+                'total_score' => $totalScore,
+                'position' => $this->calculatePosition($student->id, $term->id, $student->classroom_id),
+                'gpa' => $gpa
             ]
         );
 
-        // Get class average for comparison
-        $classAverage = Result::where('term_id', $term->id)
-            ->whereHas('student', function($query) use ($student) {
-                $query->where('classroom_id', $student->classroom_id);
-            })
-            ->avg('total_score');
+        // Get class statistics
+        $classStats = $this->getClassStatistics($term->id, $student->classroom_id);
 
+        // Get attendance data (if available)
+        $attendanceData = $this->getAttendanceData($student->id, $term->id);
+
+        // Get principal and class teacher comments
+        $comments = $this->getComments($termResult);
+
+        // Calculate grading scale
+        $gradingScale = $this->getGradingScale();
+
+        // Prepare comprehensive data for PDF
         $data = [
-            'student' => $student->load('user'),
-            'classroom' => $student->classroom,
+            'student' => $student->load(['user', 'classroom']),
             'term' => $term->load('academicSession'),
-            'results' => $results,
-            'total_score' => $results->sum('total_score'),
-            'average_score' => $termResult->average_score,
-            'class_average' => $classAverage,
-            'position' => $termResult->position,
-            'teacher_comment' => $termResult->teacher_comment,
-            'principal_comment' => $termResult->principal_comment,
-            'teacher_name' => $termResult->teacher->user->name ?? null,
-            'principal_name' => $termResult->principal->name ?? null,
+            'results' => $results->map(function($result) {
+                $gradeInfo = $this->calculateGrade($result->total_score);
+                $result->grade_info = $gradeInfo;
+                return $result;
+            }),
+            'statistics' => [
+                'total_score' => $totalScore,
+                'average_score' => round($averageScore, 2),
+                'highest_score' => $highestScore,
+                'lowest_score' => $lowestScore,
+                'total_subjects' => $results->count(),
+                'gpa' => $gpa,
+                'position' => $termResult->position,
+                'total_students' => $classStats['total_students']
+            ],
+            'class_statistics' => $classStats,
+            'attendance' => $attendanceData,
+            'comments' => $comments,
+            'grading_scale' => $gradingScale,
+            'generated_on' => now()->format('d/m/Y H:i'),
+            'academic_session' => $term->academicSession
         ];
 
-        $pdf = PDF::loadView('reports.report-card', $data);
+        // Generate PDF with A4 format
+        $pdf = PDF::loadView('reports.report-card', $data)
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'sans-serif'
+            ]);
+
         return $pdf;
+    }
+
+    private function getClassStatistics($termId, $classroomId)
+    {
+        $classResults = Result::where('term_id', $termId)
+            ->whereHas('student', function($query) use ($classroomId) {
+                $query->where('classroom_id', $classroomId);
+            })
+            ->get();
+
+        $studentAverages = $classResults->groupBy('student_id')
+            ->map(function($studentResults) {
+                return $studentResults->avg('total_score');
+            });
+
+        return [
+            'total_students' => $studentAverages->count(),
+            'class_average' => round($studentAverages->avg(), 2),
+            'highest_average' => round($studentAverages->max(), 2),
+            'lowest_average' => round($studentAverages->min(), 2)
+        ];
+    }
+
+    private function getAttendanceData($studentId, $termId)
+    {
+        // Get real attendance data from the database
+        $summary = \App\Models\Attendance::getAttendanceSummary($studentId, $termId);
+        
+        // If no attendance data exists, return default values
+        if ($summary['total_days'] === 0) {
+            return [
+                'days_present' => 0,
+                'days_absent' => 0,
+                'total_days' => 0,
+                'attendance_percentage' => 0
+            ];
+        }
+        
+        return $summary;
+    }
+
+    private function getComments($termResult)
+    {
+        return [
+            'class_teacher' => $termResult->teacher_comment ?? 'Good performance. Keep up the excellent work.',
+            'principal' => $termResult->principal_comment ?? 'Continue to strive for excellence in all subjects.',
+        ];
+    }
+
+    private function getGradingScale()
+    {
+        return [
+            ['grade' => 'A+', 'range' => '90-100', 'remark' => 'Outstanding'],
+            ['grade' => 'A', 'range' => '80-89', 'remark' => 'Excellent'],
+            ['grade' => 'B+', 'range' => '70-79', 'remark' => 'Very Good'],
+            ['grade' => 'B', 'range' => '60-69', 'remark' => 'Good'],
+            ['grade' => 'C+', 'range' => '50-59', 'remark' => 'Fair'],
+            ['grade' => 'C', 'range' => '45-49', 'remark' => 'Satisfactory'],
+            ['grade' => 'D', 'range' => '40-44', 'remark' => 'Pass'],
+            ['grade' => 'F', 'range' => '0-39', 'remark' => 'Fail']
+        ];
     }
 }

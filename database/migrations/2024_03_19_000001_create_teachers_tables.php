@@ -21,13 +21,8 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('teacher_subjects', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('teacher_id')->constrained()->onDelete('cascade');
-            $table->foreignId('subject_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-            $table->unique(['teacher_id', 'subject_id']);
-        });
+        // Note: teacher_subjects table is created in the rebuild_subjects_and_assignments migration
+        // to ensure proper order after subjects table is created
 
         Schema::create('classroom_teachers', function (Blueprint $table) {
             $table->id();
@@ -41,7 +36,7 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('classroom_teachers');
-        Schema::dropIfExists('teacher_subjects');
+        // Note: teacher_subjects table is dropped in the rebuild_subjects_and_assignments migration
         Schema::dropIfExists('teachers');
     }
 };

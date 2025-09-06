@@ -10,4 +10,12 @@ export default defineConfig({
         }),
         react(),
     ],
+    server: {
+        host: 'localhost',
+        port: 5174,
+        hmr: {
+            host: 'localhost',
+            port: 5174,
+        },
+    },
 });

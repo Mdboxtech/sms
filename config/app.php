@@ -69,6 +69,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | School Configuration
+    |--------------------------------------------------------------------------
+    |
+    | These values are specific to the school management system
+    |
+    */
+
+    'school_name' => env('SCHOOL_NAME', 'School Management System'),
+    'school_address' => env('SCHOOL_ADDRESS', ''),
+    'school_phone' => env('SCHOOL_PHONE', ''),
+    'school_email' => env('SCHOOL_EMAIL', ''),
+    'school_logo' => env('SCHOOL_LOGO', ''),
+    'school_tagline' => env('SCHOOL_TAGLINE', 'Nurturing Minds, Building Futures'),
+    'school_primary_color' => env('SCHOOL_PRIMARY_COLOR', '#2563eb'),
+    'school_secondary_color' => env('SCHOOL_SECONDARY_COLOR', '#f59e0b'),
+    
+    // Color Theme Configuration
+    'theme_primary_start' => env('THEME_PRIMARY_START', '#6366f1'), // indigo-500
+    'theme_primary_end' => env('THEME_PRIMARY_END', '#8b5cf6'), // violet-500
+    'theme_secondary_start' => env('THEME_SECONDARY_START', '#ec4899'), // pink-500
+    'theme_secondary_end' => env('THEME_SECONDARY_END', '#f59e0b'), // amber-500
+    'theme_accent_color' => env('THEME_ACCENT_COLOR', '#10b981'), // emerald-500
+    'theme_background_start' => env('THEME_BACKGROUND_START', '#f8fafc'), // slate-50
+    'theme_background_end' => env('THEME_BACKGROUND_END', '#e2e8f0'), // slate-200
+    'theme_sidebar_style' => env('THEME_SIDEBAR_STYLE', 'gradient'), // gradient, solid, glass
+    'theme_header_style' => env('THEME_HEADER_STYLE', 'glass'), // gradient, solid, glass
+    'theme_button_style' => env('THEME_BUTTON_STYLE', 'gradient'), // gradient, solid, outline
+    
+    'academic_year_format' => env('ACADEMIC_YEAR_FORMAT', 'YYYY/YYYY'),
+    'max_score' => env('MAX_SCORE', 100),
+    'pass_mark' => env('PASS_MARK', 40),
+    'grading_system' => env('GRADING_SYSTEM', 'A-F'),
+    'default_password' => env('DEFAULT_PASSWORD', 'password'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

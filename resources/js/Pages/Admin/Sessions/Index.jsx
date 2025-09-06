@@ -36,12 +36,12 @@ export default function Index({ sessions }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center">
                                     <Calendar className="w-8 h-8 text-indigo-500 mr-2" />
-                                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                    <h2 className="text-2xl font-semibold text-gray-900">
                                         Academic Sessions
                                     </h2>
                                 </div>
@@ -60,49 +60,49 @@ export default function Index({ sessions }) {
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                            <div className="overflow-x-auto bg-white rounded-lg shadow">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
                                         <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Session Name
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Start Date
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 End Date
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Status
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Actions
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tbody className="bg-white divide-y divide-gray-200">
                                         {sessions.map((session) => (
-                                            <tr key={session.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                            <tr key={session.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         <Clock className="flex-shrink-0 h-5 w-5 text-gray-400 mr-3" />
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        <div className="text-sm font-medium text-gray-900">
                                                             {session.name}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {format(new Date(session.start_date), 'MMM d, yyyy')}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {format(new Date(session.end_date), 'MMM d, yyyy')}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                         session.is_current
-                                                            ? 'bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900'
-                                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-200 dark:text-gray-900'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-800'
                                                     }`}>
                                                         {session.is_current ? 'Current' : 'Inactive'}
                                                     </span>

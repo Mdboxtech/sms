@@ -7,9 +7,8 @@ use App\Models\Subject;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithStandardization;
 
-class ResultTemplateExport implements FromCollection, WithHeadings, WithMapping, WithStandardization
+class ResultTemplateExport implements FromCollection, WithHeadings, WithMapping
 {
     protected $termId;
 
@@ -20,10 +19,46 @@ class ResultTemplateExport implements FromCollection, WithHeadings, WithMapping,
 
     public function collection()
     {
-        return Student::with('user')
+        // Get students with classrooms, or return empty collection with sample data if none exist
+        $students = Student::with(['user', 'classroom'])
             ->whereHas('classroom')
-            ->get()
-            ->crossJoin(Subject::all())
+            ->get();
+            
+        // Get all subjects, or create sample ones if none exist
+        $subjects = Subject::all();
+        
+        if ($students->isEmpty() || $subjects->isEmpty()) {
+            // Return sample data if no students or subjects exist
+            return collect([
+                [
+                    'student' => (object)[
+                        'admission_number' => 'STU001',
+                        'user' => (object)['name' => 'John Doe'],
+                        'classroom' => (object)['name' => 'JSS 1A']
+                    ],
+                    'subject' => (object)['name' => 'Mathematics']
+                ],
+                [
+                    'student' => (object)[
+                        'admission_number' => 'STU001',
+                        'user' => (object)['name' => 'John Doe'],
+                        'classroom' => (object)['name' => 'JSS 1A']
+                    ],
+                    'subject' => (object)['name' => 'English Language']
+                ],
+                [
+                    'student' => (object)[
+                        'admission_number' => 'STU002',
+                        'user' => (object)['name' => 'Jane Smith'],
+                        'classroom' => (object)['name' => 'JSS 1B']
+                    ],
+                    'subject' => (object)['name' => 'Mathematics']
+                ]
+            ]);
+        }
+        
+        return $students
+            ->crossJoin($subjects)
             ->map(function ($pair) {
                 return [
                     'student' => $pair[0],
@@ -37,38 +72,24 @@ class ResultTemplateExport implements FromCollection, WithHeadings, WithMapping,
         return [
             'Student ID',
             'Student Name',
-            'Subject ID',
-            'Subject Name',
-            'CA Score (max: 40)',
-            'Exam Score (max: 60)',
-            'Term ID',
+            'Class',
+            'Subject',
+            'CA Score',
+            'Exam Score',
+            'Remark',
         ];
     }
 
     public function map($row): array
     {
         return [
-            $row['student']->id,
+            $row['student']->admission_number,
             $row['student']->user->name,
-            $row['subject']->id,
+            $row['student']->classroom->name,
             $row['subject']->name,
             '', // CA Score to be filled
             '', // Exam Score to be filled
-            $this->termId,
+            '', // Remark to be filled (optional)
         ];
-    }
-
-    public function standardize($value)
-    {
-        if (is_numeric($value)) {
-            return [
-                'Student ID' => fn($value) => (int) $value,
-                'Subject ID' => fn($value) => (int) $value,
-                'Term ID' => fn($value) => (int) $value,
-                'CA Score (max: 40)' => fn($value) => min(40, max(0, (float) $value)),
-                'Exam Score (max: 60)' => fn($value) => min(60, max(0, (float) $value)),
-            ];
-        }
-        return $value;
     }
 }

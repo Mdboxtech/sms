@@ -130,4 +130,31 @@ class AIController extends Controller
             'remark' => 'Keep up the good work!'
         ], 200);
     }
+
+    public function autoComment(Request $request)
+    {
+        $request->validate([
+            'average_score' => 'required|numeric',
+            'results' => 'array',
+            'comment_type' => 'required|in:teacher,principal'
+        ]);
+
+        $autoCommentService = new \App\Services\AutoCommentService();
+        
+        if ($request->comment_type === 'teacher') {
+            $comment = $autoCommentService->generateTeacherComment(
+                $request->average_score,
+                $request->results ?? []
+            );
+        } else {
+            $comment = $autoCommentService->generatePrincipalComment(
+                $request->average_score,
+                $request->results ?? []
+            );
+        }
+
+        return response()->json([
+            'comment' => $comment
+        ]);
+    }
 }

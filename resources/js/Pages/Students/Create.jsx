@@ -8,4 +8,5 @@ export default function Create({ auth, classrooms }) {
             <StudentForm auth={auth} classrooms={classrooms} />
         </>
     );
+  
 }

@@ -33,4 +33,43 @@ class Classroom extends Model
         return $this->belongsToMany(Teacher::class, 'classroom_teachers')
             ->withTimestamps();
     }
+
+    // Attendance Relationship
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    // CBT Relationships
+    public function examSchedules(): HasMany
+    {
+        return $this->hasMany(ExamSchedule::class);
+    }
+
+    public function examTimetables(): HasMany
+    {
+        return $this->hasMany(ExamTimetable::class);
+    }
+
+    public function getScheduledExams($termId = null)
+    {
+        $query = $this->examSchedules()->with(['exam.subject', 'exam.teacher']);
+        
+        if ($termId) {
+            $query->where('term_id', $termId);
+        }
+        
+        return $query->upcoming()->get();
+    }
+
+    public function getPublishedTimetables($termId = null)
+    {
+        $query = $this->examTimetables()->published();
+        
+        if ($termId) {
+            $query->where('term_id', $termId);
+        }
+        
+        return $query->orderBy('exam_date')->get();
+    }
 }

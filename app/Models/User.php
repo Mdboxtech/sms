@@ -52,6 +52,27 @@ class User extends Authenticatable
         return $this->hasOne(Teacher::class);
     }
 
+    // CBT Relationships
+    public function createdExams()
+    {
+        return $this->hasMany(Exam::class, 'teacher_id');
+    }
+
+    public function createdQuestions()
+    {
+        return $this->hasMany(Question::class, 'teacher_id');
+    }
+
+    public function createdExamSchedules()
+    {
+        return $this->hasMany(ExamSchedule::class, 'created_by');
+    }
+
+    public function createdExamTimetables()
+    {
+        return $this->hasMany(ExamTimetable::class, 'created_by');
+    }
+
     public function hasRole($roles): bool
     {
         if (is_string($roles)) {

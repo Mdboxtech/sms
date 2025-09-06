@@ -1,6 +1,7 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Pagination from '@/Components/Pagination';
 import { 
     School,
     Users,
@@ -11,7 +12,7 @@ import {
     GraduationCap
 } from 'lucide-react';
 
-export default function Show({ classroom }) {
+export default function Show({ classroom, students }) {
     return (
         <AuthenticatedLayout>
             <Head title={`${classroom.name} - Classroom Details`} />
@@ -62,30 +63,50 @@ export default function Show({ classroom }) {
                                                 Students
                                             </h3>
                                             <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                {classroom.students.length} / {classroom.capacity}
+                                                {students?.total || 0} / {classroom.capacity}
                                             </span>
                                         </div>
-                                        {classroom.students.length > 0 ? (
-                                            <div className="space-y-3">
-                                                {classroom.students.map(student => (
-                                                    <div 
-                                                        key={student.id}
-                                                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                                                    >
-                                                        <div className="flex items-center">
-                                                            <GraduationCap className="w-5 h-5 text-gray-400 mr-3" />
-                                                            <div>
-                                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {student.user.name}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                                    ID: {student.admission_number}
+                                        
+                                        {students?.data && students.data.length > 0 ? (
+                                            <>
+                                                <div className="space-y-3 mb-4">
+                                                    {students.data.map(student => (
+                                                        <div 
+                                                            key={student.id}
+                                                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                                                        >
+                                                            <div className="flex items-center">
+                                                                <GraduationCap className="w-5 h-5 text-gray-400 mr-3" />
+                                                                <div>
+                                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                        {student.user?.name || 'Unknown Student'}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                                        ID: {student.admission_number}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                    ))}
+                                                </div>
+                                                
+                                                {/* Pagination for students */}
+                                                {students.links && students.links.length > 3 && (
+                                                    <div className="mt-4">
+                                                        <Pagination
+                                                            links={students.links}
+                                                            from={students.from}
+                                                            to={students.to}
+                                                            total={students.total}
+                                                            currentPage={students.current_page}
+                                                            lastPage={students.last_page}
+                                                            perPage={students.per_page}
+                                                            preserveState={true}
+                                                            preserveScroll={true}
+                                                        />
                                                     </div>
-                                                ))}
-                                            </div>
+                                                )}
+                                            </>
                                         ) : (
                                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 No students assigned to this classroom yet.
@@ -102,7 +123,7 @@ export default function Show({ classroom }) {
                                                 <UserCheck className="w-5 h-5 mr-2 text-indigo-500" />
                                                 Teachers
                                             </h3>
-                                            {classroom.teachers.length > 0 ? (
+                                            {classroom.teachers && classroom.teachers.length > 0 ? (
                                                 <div className="space-y-3">
                                                     {classroom.teachers.map(teacher => (
                                                         <div 
@@ -112,7 +133,7 @@ export default function Show({ classroom }) {
                                                             <div className="flex items-center">
                                                                 <UserCheck className="w-5 h-5 text-gray-400 mr-3" />
                                                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {teacher.name}
+                                                                    {teacher.user?.name || teacher.name || 'Unknown Teacher'}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -130,7 +151,7 @@ export default function Show({ classroom }) {
                                                 <BookOpen className="w-5 h-5 mr-2 text-indigo-500" />
                                                 Subjects
                                             </h3>
-                                            {classroom.subjects.length > 0 ? (
+                                            {classroom.subjects && classroom.subjects.length > 0 ? (
                                                 <div className="space-y-3">
                                                     {classroom.subjects.map(subject => (
                                                         <div 
@@ -139,8 +160,13 @@ export default function Show({ classroom }) {
                                                         >
                                                             <div className="flex items-center">
                                                                 <BookOpen className="w-5 h-5 text-gray-400 mr-3" />
-                                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {subject.name}
+                                                                <div>
+                                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                        {subject.name}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                                        Code: {subject.code}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>

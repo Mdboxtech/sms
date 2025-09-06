@@ -86,7 +86,7 @@ export default function StudentDashboard({ auth, student_info, current_results, 
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-semibold text-gray-900">Current Term Results</h3>
                                     <Link
-                                        href={route('student.results')}
+                                        href={route('student.results.index')}
                                         className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
                                     >
                                         View All Results
@@ -119,7 +119,7 @@ export default function StudentDashboard({ auth, student_info, current_results, 
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                                 <div className="space-y-4">
                                     <Link
-                                        href={route('student.results')}
+                                        href={route('student.results.index')}
                                         className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                                     >
                                         <BarChart3 className="h-6 w-6 text-blue-600 mr-3" />
@@ -130,13 +130,13 @@ export default function StudentDashboard({ auth, student_info, current_results, 
                                     </Link>
                                     
                                     <Link
-                                        href={route('student.report-card')}
+                                        href={route('student.results.progress')}
                                         className="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
                                     >
                                         <FileText className="h-6 w-6 text-green-600 mr-3" />
                                         <div>
-                                            <p className="font-medium text-green-900">Download Report Card</p>
-                                            <p className="text-sm text-green-700">Get your official report card</p>
+                                            <p className="font-medium text-green-900">View Progress</p>
+                                            <p className="text-sm text-green-700">Check your academic progress</p>
                                         </div>
                                     </Link>
                                 </div>

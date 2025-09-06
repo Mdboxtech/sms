@@ -6,6 +6,7 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StudentsExport;
@@ -17,13 +18,15 @@ class StudentController extends Controller
     {
         $query = Student::with(['user', 'classroom'])
             ->when($request->search, function ($query, $search) {
-                $query->whereHas('user', function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                })
-                ->orWhere('admission_number', 'like', "%{$search}%")
-                ->orWhere('parent_name', 'like', "%{$search}%")
-                ->orWhere('parent_phone', 'like', "%{$search}%");
+                $query->where(function($subQuery) use ($search) {
+                    $subQuery->whereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                                  ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhere('admission_number', 'like', "%{$search}%")
+                    ->orWhere('parent_name', 'like', "%{$search}%")
+                    ->orWhere('parent_phone', 'like', "%{$search}%");
+                });
             })
             ->when($request->classroom_id, function ($query, $classroom_id) {
                 $query->where('classroom_id', $classroom_id);
@@ -44,7 +47,7 @@ class StudentController extends Controller
         }
 
         return Inertia::render('Students/Index', [
-            'students' => $query->latest()->paginate(10)->withQueryString(),
+            'students' => $query->latest()->paginate(15)->withQueryString(),
             'isGrouped' => false,
             'classrooms' => \App\Models\Classroom::orderBy('name')->get(),
             'filters' => $request->only(['search', 'classroom_id', 'gender', 'groupBy'])
@@ -148,7 +151,7 @@ class StudentController extends Controller
 
     public function teacherStudents()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $teacher = $user->teacher;
         
         if (!$teacher) {
@@ -157,8 +160,17 @@ class StudentController extends Controller
             ]);
         }
         
-        $students = Student::whereIn('classroom_id', $teacher->classrooms->pluck('id'))
-            ->with(['user', 'classroom', 'subjects'])
+        // Get all classrooms that teach the teacher's subjects
+        $classroomIds = $teacher->subjects()
+            ->with('classrooms')
+            ->get()
+            ->pluck('classrooms')
+            ->flatten()
+            ->pluck('id')
+            ->unique();
+        
+        $students = Student::whereIn('classroom_id', $classroomIds)
+            ->with(['user', 'classroom.subjects'])
             ->get();
         
         return Inertia::render('Teacher/Students', [
@@ -171,6 +183,21 @@ class StudentController extends Controller
         return Excel::download(new StudentsExport, 'students.xlsx');
     }
 
+    public function downloadTemplate()
+    {
+        return Excel::download(new \App\Exports\StudentsTemplateExport, 'students_template.xlsx');
+    }
+
+    public function importPage()
+    {
+        return Inertia::render('Students/Import', [
+            'auth' => [
+                'user' => Auth::user(),
+            ],
+            'classrooms' => \App\Models\Classroom::all()
+        ]);
+    }
+
     public function import(Request $request)
     {
         $request->validate([
@@ -179,9 +206,9 @@ class StudentController extends Controller
 
         try {
             Excel::import(new StudentsImport, $request->file('file'));
-            return back()->with('success', 'Students imported successfully.');
+            return redirect()->route('admin.students.import')->with('success', 'Students imported successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error importing students: ' . $e->getMessage());
+            return redirect()->route('admin.students.import')->with('error', 'Error importing students: ' . $e->getMessage());
         }
     }
 }

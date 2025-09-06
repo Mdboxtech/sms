@@ -12,12 +12,25 @@ use Inertia\Inertia;
 
 class TeacherController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Teacher::with(['user', 'subjects', 'classrooms'])
+            ->when($request->search, function ($query, $search) {
+                $query->where(function($subQuery) use ($search) {
+                    $subQuery->whereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                                  ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('qualification', 'like', "%{$search}%");
+                });
+            });
+
         return Inertia::render('Admin/Teachers/Index', [
-            'teachers' => Teacher::with(['user', 'subjects', 'classrooms'])->get(),
+            'teachers' => $query->latest()->paginate(15)->withQueryString(),
             'subjects' => Subject::all(),
-            'classrooms' => Classroom::all()
+            'classrooms' => Classroom::all(),
+            'filters' => $request->only(['search'])
         ]);
     }
 

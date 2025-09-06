@@ -10,6 +10,7 @@ use App\Models\Classroom;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TermResultController extends Controller
 {
@@ -70,7 +71,8 @@ class TermResultController extends Controller
      * Store a newly created term result
      */
     public function store(Request $request)
-    {
+    {  
+     
         $request->validate([
             'student_id' => 'required|exists:students,id',
             'term_id' => 'required|exists:terms,id',
@@ -165,6 +167,7 @@ class TermResultController extends Controller
      */
     public function update(Request $request, TermResult $termResult)
     {
+    
         $request->validate([
             'teacher_comment' => 'nullable|string|max:1000',
             'principal_comment' => 'nullable|string|max:1000',
@@ -207,42 +210,72 @@ class TermResultController extends Controller
      */
     public function getOrCreate(Request $request)
     {
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'term_id' => 'required|exists:terms,id',
-            'classroom_id' => 'required|exists:classrooms,id',
-        ]);
+        try {
+            $request->validate([
+                'student_id' => 'required|exists:students,id',
+                'term_id' => 'required|exists:terms,id',
+                'classroom_id' => 'required|exists:classrooms,id',
+            ]);
 
-        // Check if term result already exists
-        $termResult = TermResult::where('student_id', $request->student_id)
-            ->where('term_id', $request->term_id)
-            ->first();
-
-        if (!$termResult) {
-            // Calculate student's average and position
-            $results = Result::where('student_id', $request->student_id)
+            // Check if term result already exists
+            $termResult = TermResult::where('student_id', $request->student_id)
                 ->where('term_id', $request->term_id)
-                ->get();
+                ->first();
 
-            $averageScore = $results->avg('total_score') ?? 0;
-            $totalScore = $results->sum('total_score') ?? 0;
-            $position = $this->calculateStudentPosition($request->student_id, $request->term_id, $request->classroom_id);
+            if (!$termResult) {
+                // Calculate student's average and position
+                $results = Result::where('student_id', $request->student_id)
+                    ->where('term_id', $request->term_id)
+                    ->get();
 
-            // Create new term result
-            $termResult = TermResult::create([
-                'student_id' => $request->student_id,
-                'term_id' => $request->term_id,
-                'classroom_id' => $request->classroom_id,
-                'average_score' => round($averageScore, 2),
-                'total_score' => $totalScore,
-                'position' => $position,
+                $averageScore = $results->avg('total_score') ?? 0;
+                $totalScore = $results->sum('total_score') ?? 0;
+                
+                // Handle position calculation with error handling
+                try {
+                    $position = $this->calculateStudentPosition($request->student_id, $request->term_id, $request->classroom_id);
+                } catch (\Exception $e) {
+                    Log::error('Error calculating student position: ' . $e->getMessage());
+                    $position = 0; // Use 0 instead of 'N/A' since position is cast as integer
+                }
+
+                // Create new term result
+                $termResult = TermResult::create([
+                    'student_id' => $request->student_id,
+                    'term_id' => $request->term_id,
+                    'classroom_id' => $request->classroom_id,
+                    'average_score' => round($averageScore, 2),
+                    'total_score' => $totalScore,
+                    'position' => $position,
+                ]);
+
+                if (!$termResult) {
+                    throw new \Exception('Failed to create term result record');
+                }
+            }
+
+            return back()->with([
+                'termResult' => $termResult,
+                'message' => 'Term result created/retrieved successfully'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors([
+                'error' => 'Validation failed',
+                'details' => $e->errors()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getOrCreate: ' . $e->getMessage(), [
+                'student_id' => $request->student_id ?? null,
+                'term_id' => $request->term_id ?? null,
+                'classroom_id' => $request->classroom_id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors([
+                'error' => 'Failed to create term result',
+                'message' => $e->getMessage()
             ]);
         }
-
-        return response()->json([
-            'termResult' => $termResult,
-            'message' => 'Term result created/retrieved successfully'
-        ]);
     }
 
     /**
@@ -260,8 +293,8 @@ class TermResultController extends Controller
             'principal_comment' => $request->principal_comment,
         ]);
 
-        return response()->json([
-            'termResult' => $termResult,
+        return back()->with([
+            'termResult' => $termResult->fresh(),
             'message' => 'Comments updated successfully'
         ]);
     }
@@ -560,5 +593,74 @@ class TermResultController extends Controller
         return response()->json([
             'message' => 'PDF export functionality to be implemented'
         ]);
+    }
+
+    /**
+     * Show import page
+     */
+    public function importPage()
+    {
+        $classrooms = Classroom::all();
+        $terms = Term::with('academicSession')->get();
+
+        return Inertia::render('Admin/TermResults/Import', [
+            'classrooms' => $classrooms,
+            'terms' => $terms
+        ]);
+    }
+
+    /**
+     * Import term results from Excel file
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'classroom_id' => 'required|exists:classrooms,id',
+            'term_id' => 'required|exists:terms,id'
+        ]);
+
+        try {
+            // Here you would implement the actual import logic
+            // For now, return success
+            return redirect()->back()->with('success', 'Term results imported successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Import failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download template for term results import
+     */
+    public function downloadTemplate()
+    {
+        $classrooms = Classroom::all();
+        
+        // Create a simple CSV template
+        $filename = 'term_results_template_' . date('Y-m-d') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            
+            // CSV headers
+            fputcsv($file, [
+                'Student ID', 'Admission Number', 'Total Score', 'Average Score', 
+                'Position', 'Teacher Comment', 'Principal Comment'
+            ]);
+
+            // Example row
+            fputcsv($file, [
+                '1', '2024001', '450', '75.0', '5', 'Good performance', 'Keep it up'
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

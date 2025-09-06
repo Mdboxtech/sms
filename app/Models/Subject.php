@@ -38,4 +38,25 @@ class Subject extends Model
         return $this->belongsToMany(Teacher::class, 'teacher_subjects')
             ->withTimestamps();
     }
+
+    // CBT Relationships
+    public function questions(): HasMany
+    {
+        return $this->hasMany(Question::class);
+    }
+
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class);
+    }
+
+    public function getActiveQuestions()
+    {
+        return $this->questions()->active()->get();
+    }
+
+    public function getPublishedExams()
+    {
+        return $this->exams()->published()->with('teacher')->get();
+    }
 }

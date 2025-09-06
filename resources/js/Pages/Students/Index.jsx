@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import Card from '@/Components/UI/Card';
 import Table from '@/Components/UI/Table';
+import Button from '@/Components/UI/Button';
 import { Plus, Pencil, Trash2, Download, Upload } from 'lucide-react';
 
 export default function Students({ auth, students, classrooms, filters }) {
@@ -49,6 +50,8 @@ export default function Students({ auth, students, classrooms, filters }) {
 
     const handleFilters = (e) => {
         e?.preventDefault();
+        
+        // Remove page parameter when filtering to start from page 1
         router.get(route('admin.students.index'), {
             search: searchTerm,
             classroom_id: selectedClass,
@@ -101,28 +104,13 @@ export default function Students({ auth, students, classrooms, filters }) {
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-semibold text-gray-900">Students</h2>
                         <div className="flex items-center space-x-4">
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    id="file-upload"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const formData = new FormData();
-                                        formData.append('file', e.target.files[0]);
-                                        router.post(route('admin.students.import'), formData);
-                                        e.target.value = null;
-                                    }}
-                                    accept=".xlsx,.xls"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => document.getElementById('file-upload').click()}
-                                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                                >
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Import
-                                </button>
-                            </div>
+                            <Link
+                                href={route('admin.students.import')}
+                                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Import
+                            </Link>
                             <a
                                 href={route('admin.students.export')}
                                 className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -130,14 +118,15 @@ export default function Students({ auth, students, classrooms, filters }) {
                                 <Download className="h-4 w-4 mr-2" />
                                 Export
                             </a>
-                            <Link
+                            <Button
+                                as={Link}
                                 href={route('admin.students.create')}
-
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                                variant="primary"
+                                className="inline-flex items-center"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Student
-                            </Link>
+                            </Button>
                         </div>
                     </div>
 
@@ -163,10 +152,7 @@ export default function Students({ auth, students, classrooms, filters }) {
                                         name="search"
                                         id="search"
                                         value={searchTerm}
-                                        onChange={(e) => {
-                                            setSearchTerm(e.target.value);
-                                            handleFilters();
-                                        }}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
                                         className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                         placeholder="Search by name, email, or admission number..."
                                     />
@@ -177,10 +163,7 @@ export default function Students({ auth, students, classrooms, filters }) {
                                     <select
                                         id="classroom"
                                         value={selectedClass}
-                                        onChange={(e) => {
-                                            setSelectedClass(e.target.value);
-                                            handleFilters();
-                                        }}
+                                        onChange={(e) => setSelectedClass(e.target.value)}
                                         className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                     >
                                         <option value="">All Classes</option>
@@ -197,10 +180,7 @@ export default function Students({ auth, students, classrooms, filters }) {
                                     <select
                                         id="gender"
                                         value={selectedGender}
-                                        onChange={(e) => {
-                                            setSelectedGender(e.target.value);
-                                            handleFilters();
-                                        }}
+                                        onChange={(e) => setSelectedGender(e.target.value)}
                                         className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                     >
                                         <option value="">All Genders</option>
@@ -210,15 +190,33 @@ export default function Students({ auth, students, classrooms, filters }) {
                                 </div>
 
                                 <div className="md:col-span-3 flex justify-end">
-                                    <button
+                                    <Button
                                         onClick={resetFilters}
-                                        className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 mr-2"
+                                        variant="secondary"
                                     >
                                         Reset Filters
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    {/* Quick Search Bar */}
+                    <div className="mb-4">
+                        <div className="relative max-w-md">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Quick search students..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
                     </div>
 
                     <Table
@@ -226,22 +224,26 @@ export default function Students({ auth, students, classrooms, filters }) {
                         data={students.data}
                         actions={(row) => (
                             <div className="flex items-center space-x-3">
-                                <Link
+                                <Button
+                                    as={Link}
                                     href={route('admin.students.edit', row.id)}
-
-                                    className="text-indigo-600 hover:text-indigo-900"
+                                    variant="primary"
+                                    size="sm"
+                                    className="p-2"
                                 >
-                                    <Pencil className="h-5 w-5" />
-                                </Link>
-                                <button
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
                                     onClick={() => handleDelete(row.id)}
-                                    className="text-red-600 hover:text-red-900"
+                                    variant="danger"
+                                    size="sm"
+                                    className="p-2"
                                 >
-                                    <Trash2 className="h-5 w-5" />
-                                </button>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </div>
                         )}
-                        pagination={students.meta}
+                        pagination={students}
                     />
                 </Card>
             </div>

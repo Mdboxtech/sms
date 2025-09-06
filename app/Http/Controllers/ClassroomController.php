@@ -8,15 +8,26 @@ use Inertia\Inertia;
 
 class ClassroomController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->get('search');
+        
         $classrooms = Classroom::with(['subjects', 'teachers', 'students'])
             ->withCount(['students', 'subjects'])
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('section', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+            })
             ->latest()
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('Admin/Classrooms/Index', [
-            'classrooms' => $classrooms
+            'classrooms' => $classrooms,
+            'filters' => [
+                'search' => $search,
+            ]
         ]);
     }
 
@@ -70,10 +81,22 @@ class ClassroomController extends Controller
             ->with('success', 'Classroom deleted successfully.');
     }
 
-    public function show(Classroom $classroom)
+    public function show(Request $request, Classroom $classroom)
     {
+        $studentsPerPage = 10; // Small pagination as requested
+        
+        // Get paginated students
+        $students = $classroom->students()
+            ->with('user')
+            ->paginate($studentsPerPage, ['*'], 'students_page')
+            ->withQueryString();
+            
+        // Load other relationships normally
+        $classroom->load(['teachers.user', 'subjects']);
+        
         return Inertia::render('Admin/Classrooms/Show', [
-            'classroom' => $classroom->load(['students.user', 'teachers.user', 'subjects'])
+            'classroom' => $classroom,
+            'students' => $students,
         ]);
     }
 }

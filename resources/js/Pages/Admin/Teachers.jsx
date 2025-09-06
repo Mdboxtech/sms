@@ -14,7 +14,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import Modal from '@/Components/Modal';
-import Select from '@/Components/Select';
+import SelectInput from '@/Components/SelectInput';
 
 export default function Teachers({ auth, teachers = [], subjects = [], classrooms = [] }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -207,7 +207,7 @@ export default function Teachers({ auth, teachers = [], subjects = [], classroom
                         {assignmentType === 'subject' ? (
                             <div>
                                 <InputLabel htmlFor="subject_id" value="Subject" />
-                                <Select
+                                <SelectInput
                                     id="subject_id"
                                     name="subject_id"
                                     value={data.subject_id}
@@ -221,13 +221,13 @@ export default function Teachers({ auth, teachers = [], subjects = [], classroom
                                             {subject.name} ({subject.code})
                                         </option>
                                     ))}
-                                </Select>
+                                </SelectInput>
                                 <InputError message={errors.subject_id} className="mt-2" />
                             </div>
                         ) : (
                             <div>
                                 <InputLabel htmlFor="classroom_id" value="Classroom" />
-                                <Select
+                                <SelectInput
                                     id="classroom_id"
                                     name="classroom_id"
                                     value={data.classroom_id}
@@ -241,7 +241,7 @@ export default function Teachers({ auth, teachers = [], subjects = [], classroom
                                             {classroom.name}
                                         </option>
                                     ))}
-                                </Select>
+                                </SelectInput>
                                 <InputError message={errors.classroom_id} className="mt-2" />
                             </div>
                         )}

@@ -15,7 +15,9 @@ class TermResult extends Model
         'term_id',
         'classroom_id',
         'average_score',
+        'total_score',
         'position',
+        'gpa',
         'teacher_comment',
         'principal_comment',
         'teacher_id',
@@ -24,6 +26,8 @@ class TermResult extends Model
 
     protected $casts = [
         'average_score' => 'decimal:2',
+        'total_score' => 'decimal:2',
+        'gpa' => 'decimal:2',
         'position' => 'integer',
     ];
 

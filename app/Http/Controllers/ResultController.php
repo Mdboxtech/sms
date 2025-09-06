@@ -11,9 +11,16 @@ use App\Models\User;
 use App\Exports\ResultsExport;
 use App\Imports\ResultsImport;
 use App\Exports\ResultTemplateExport;
+use App\Services\ResultCompilerService;
+use App\Services\ClassTeacherService;
+use App\Http\Requests\StoreResultRequest;
+use App\Http\Requests\UpdateResultRequest;
+use App\Http\Requests\BulkStoreResultRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -28,47 +35,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class ResultController extends Controller
 {
-    // Basic CRUD operations
-    // public function index(Request $request)
-    // {
-    //     $query = Result::with(['student.user', 'student.classroom', 'subject', 'term.academicSession', 'teacher.user'])
-    //         ->when($request->student_id, function ($query, $student_id) {
-    //             return $query->where('student_id', $student_id);
-    //         })
-    //         ->when($request->subject_id, function ($query, $subject_id) {
-    //             return $query->where('subject_id', $subject_id);
-    //         })
-    //         ->when($request->classroom_id, function ($query, $classroom_id) {
-    //             return $query->whereHas('student', function ($q) use ($classroom_id) {
-    //                 $q->where('classroom_id', $classroom_id);
-    //             });
-    //         })
-    //         ->when($request->term_id, function ($query, $term_id) {
-    //             return $query->where('term_id', $term_id);
-    //         })
-    //         ->when($request->teacher_id, function ($query, $teacher_id) {
-    //             return $query->where('teacher_id', $teacher_id);
-    //         })
-    //         ->when($request->min_score, function ($query, $min_score) {
-    //             return $query->where('total_score', '>=', $min_score);
-    //         })
-    //         ->when($request->max_score, function ($query, $max_score) {
-    //             return $query->where('total_score', '<=', $max_score);
-    //         })
-    //         ->latest();
-    //     return Inertia::render('Results/Index', [
-    //         'results' => $query->paginate(20)->withQueryString(),
-    //         'students' => Student::with('user')->get(),
-    //         'subjects' => Subject::all(),
-    //         'classrooms' => Classroom::all(),
-    //         'terms' => Term::with('academicSession')->get(),
-    //         'teachers' => User::whereHas('role', function($q) {
-    //             $q->where('name', 'teacher');
-    //         })->get(),
-    //         'filters' => $request->only(['student_id', 'subject_id', 'classroom_id', 'term_id', 'teacher_id', 'min_score', 'max_score'])
-    //     ]);
-    // }
+    use AuthorizesRequests;
+    
+    protected $classTeacherService;
 
+    public function __construct(ClassTeacherService $classTeacherService)
+    {
+        $this->classTeacherService = $classTeacherService;
+    }
+    
+    // Basic CRUD operations
     public function index(Request $request)
     {
         $query = Result::with(['student.user', 'student.classroom', 'subject', 'term.academicSession', 'teacher', 'termResult'])
@@ -95,6 +71,7 @@ class ResultController extends Controller
             ->when($request->max_score, function ($query, $max_score) {
                 return $query->where('total_score', '<=', $max_score);
             })
+            ->distinct() // Add this to prevent duplicates
             ->latest();
 
         // Students will be fetched dynamically based on classroom selection
@@ -137,6 +114,70 @@ class ResultController extends Controller
 
         return response()->json($students);
     }
+
+    /**
+     * Get manageable subjects for the current teacher in a specific classroom
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getManageableSubjects(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || !$user->teacher) {
+            return response()->json(['error' => 'Not authorized'], 403);
+        }
+
+        $classroomId = $request->get('classroom_id');
+        if (!$classroomId) {
+            return response()->json(['error' => 'Classroom ID required'], 400);
+        }
+
+        $subjects = $this->classTeacherService->getTeacherManageableSubjects(
+            $user->teacher->id, 
+            $classroomId
+        );
+
+        return response()->json($subjects);
+    }
+
+    /**
+     * Get teacher permission information for a specific result context
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTeacherPermissions(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || !$user->teacher) {
+            return response()->json(['error' => 'Not authorized'], 403);
+        }
+
+        $studentId = $request->get('student_id');
+        $subjectId = $request->get('subject_id');
+
+        if (!$studentId || !$subjectId) {
+            return response()->json(['error' => 'Student ID and Subject ID required'], 400);
+        }
+
+        $permissionType = $this->classTeacherService->getTeacherPermissionType(
+            $user->teacher->id,
+            $subjectId,
+            $studentId
+        );
+
+        $canManage = $this->classTeacherService->canTeacherManageSubjectResult(
+            $user->teacher->id,
+            $subjectId,
+            $studentId
+        );
+
+        return response()->json([
+            'can_manage' => $canManage,
+            'permission_type' => $permissionType,
+            'is_class_teacher' => $permissionType === 'class_assignment'
+        ]);
     }
 
     public function create()
@@ -152,15 +193,25 @@ class ResultController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreResultRequest $request)
     {
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'term_id' => 'required|exists:terms,id',
-            'ca_score' => 'required|numeric|min:0|max:40',
-            'exam_score' => 'required|numeric|min:0|max:60',
-        ]);
+        $this->authorize('create', Result::class);
+        
+        // Additional authorization check for specific student and subject
+        $this->authorize('createForStudentSubject', [Result::class, $request->student_id, $request->subject_id]);
+
+        // Check for duplicate result to prevent duplicates during creation
+        $existingResult = Result::where([
+            'student_id' => $request->student_id,
+            'subject_id' => $request->subject_id,
+            'term_id' => $request->term_id,
+        ])->first();
+
+        if ($existingResult) {
+            return redirect()->back()
+                ->withErrors(['duplicate' => 'A result for this student, subject, and term already exists.'])
+                ->withInput();
+        }
 
         // Calculate total score
         $totalScore = $request->ca_score + $request->exam_score;
@@ -173,7 +224,7 @@ class ResultController extends Controller
             'ca_score' => $request->ca_score,
             'exam_score' => $request->exam_score,
             'total_score' => $totalScore,
-            'teacher_id' => auth()->id()
+            'teacher_id' => Auth::id()
         ]);
 
         // Generate AI-powered remark
@@ -212,12 +263,9 @@ class ResultController extends Controller
         ]);
     }
 
-    public function update(Request $request, Result $result)
+    public function update(UpdateResultRequest $request, Result $result)
     {
-        $request->validate([
-            'ca_score' => 'required|numeric|min:0|max:40',
-            'exam_score' => 'required|numeric|min:0|max:60',
-        ]);
+        $this->authorize('update', $result);
 
         $totalScore = $request->ca_score + $request->exam_score;
 
@@ -258,28 +306,30 @@ class ResultController extends Controller
         ]);
     }
 
-    public function bulkStore(Request $request)
+    public function bulkStore(BulkStoreResultRequest $request)
     {
-        $request->validate([
-            'term_id' => 'required|exists:terms,id',
-            'results' => 'required|array',
-            'results.*.student_id' => 'required|exists:students,id',
-            'results.*.subject_id' => 'required|exists:subjects,id',
-            'results.*.ca_score' => 'required|numeric|min:0|max:40',
-            'results.*.exam_score' => 'required|numeric|min:0|max:60',
-        ]);
+        $this->authorize('bulkCreate', Result::class);
 
         try {
             foreach ($request->results as $resultData) {
-                Result::create([
+                // Check for duplicate before creating
+                $existingResult = Result::where([
                     'student_id' => $resultData['student_id'],
                     'subject_id' => $resultData['subject_id'],
                     'term_id' => $request->term_id,
-                    'ca_score' => $resultData['ca_score'],
-                    'exam_score' => $resultData['exam_score'],
-                    'total_score' => $resultData['ca_score'] + $resultData['exam_score'],
-                    'teacher_id' => Auth::id()
-                ]);
+                ])->first();
+
+                if (!$existingResult) {
+                    Result::create([
+                        'student_id' => $resultData['student_id'],
+                        'subject_id' => $resultData['subject_id'],
+                        'term_id' => $request->term_id,
+                        'ca_score' => $resultData['ca_score'],
+                        'exam_score' => $resultData['exam_score'],
+                        'total_score' => $resultData['ca_score'] + $resultData['exam_score'],
+                        'teacher_id' => Auth::id()
+                    ]);
+                }
             }
 
             return redirect()->back()->with('success', 'Results saved successfully');
@@ -322,6 +372,7 @@ class ResultController extends Controller
         
         $results = Result::whereIn('subject_id', $teacher->subjects->pluck('id'))
             ->with(['student.user', 'subject', 'term.academicSession'])
+            ->distinct()
             ->latest()
             ->get();
         
@@ -342,6 +393,7 @@ class ResultController extends Controller
         
         $results = Result::where('student_id', $student->id)
             ->with(['subject', 'term.academicSession'])
+            ->distinct()
             ->latest()
             ->get();
         
@@ -358,6 +410,7 @@ class ResultController extends Controller
             $query->where('classroom_id', $classroom->id);
         })
         ->with(['student.user', 'subject', 'term.academicSession', 'teacher.user'])
+        ->distinct()
         ->latest()
         ->get();
         
@@ -373,6 +426,7 @@ class ResultController extends Controller
         
         $results = Result::where('student_id', $student->id)
             ->with(['subject', 'term.academicSession', 'teacher.user'])
+            ->distinct()
             ->latest()
             ->get();
         
@@ -388,6 +442,7 @@ class ResultController extends Controller
         
         $results = Result::where('subject_id', $subject->id)
             ->with(['student.user', 'student.classroom', 'term.academicSession', 'teacher.user'])
+            ->distinct()
             ->latest()
             ->get();
         
@@ -403,6 +458,7 @@ class ResultController extends Controller
         
         $results = Result::where('term_id', $term->id)
             ->with(['student.user', 'student.classroom', 'subject', 'teacher.user'])
+            ->distinct()
             ->latest()
             ->get();
         
@@ -422,6 +478,7 @@ class ResultController extends Controller
         
         $results = Result::where('teacher_id', $teacher instanceof User ? $teacher->id : $teacher)
             ->with(['student.user', 'student.classroom', 'subject', 'term.academicSession'])
+            ->distinct()
             ->latest()
             ->get();
         
@@ -435,6 +492,7 @@ class ResultController extends Controller
     public function analysis()
     {
         $results = Result::with(['student.user', 'subject', 'term.academicSession'])
+            ->distinct()
             ->latest()
             ->get();
 
@@ -456,15 +514,27 @@ class ResultController extends Controller
 
     public function compileIndex()
     {
-        $user = User::with('role')->find(Auth::id());
-        
-        return Inertia::render('Results/Compile', [
-            'auth' => [
-                'user' => $user,
-            ],
-            'classrooms' => Classroom::all(),
-            'terms' => Term::with('academicSession')->get()
-        ]);
+        try {
+            // Simple test implementation
+            $classrooms = Classroom::with('students')->get();
+            $terms = Term::with('academicSession')->get();
+            
+            return Inertia::render('Results/Compile', [
+                'auth' => [
+                    'user' => Auth::user(),
+                ],
+                'classrooms' => $classrooms,
+                'terms' => $terms,
+                'results' => null,
+                'students' => [],
+                'selected_classroom' => null,
+                'selected_term' => null,
+                'filters' => []
+            ]);
+        } catch (\Exception $e) {
+            Log::error('CompileIndex Error: ' . $e->getMessage());
+            return redirect()->route('admin.results.index')->with('error', 'Unable to access compile page: ' . $e->getMessage());
+        }
     }
 
     public function compile(Request $request)
@@ -474,25 +544,45 @@ class ResultController extends Controller
             'term_id' => 'required|exists:terms,id'
         ]);
 
-        $user = User::with('role')->find(Auth::id());
+        // Authorize compilation for this specific classroom
+        $this->authorize('compile', [Result::class, $request->classroom_id]);
         
-        $results = Result::whereHas('student', function($query) use ($request) {
-            $query->where('classroom_id', $request->classroom_id);
-        })
-        ->where('term_id', $request->term_id)
-        ->with(['student.user', 'subject','student.classroom'])
-        ->get();
+        $compilerService = new ResultCompilerService();
+        
+        // Check if compilation can be performed
+        $canCompile = $compilerService->canCompile($request->classroom_id, $request->term_id);
+        
+        if (!$canCompile['can_compile']) {
+            return redirect()->back()
+                ->withErrors(['compilation' => $canCompile['message']]);
+        }
 
-        return Inertia::render('Results/Compile', [
-            'auth' => [
-                'user' => $user,
-            ],
-            'results' => $results,
-            'classrooms' => Classroom::all(),
-            'terms' => Term::with('academicSession')->get(),
-            'selected_classroom' => $request->classroom_id,
-            'selected_term' => $request->term_id
-        ]);
+        try {
+            // Compile the results
+            $compiledResults = $compilerService->compileResults($request->classroom_id, $request->term_id);
+            
+            // Get class statistics
+            $statistics = $compilerService->getClassStatistics($request->classroom_id, $request->term_id);
+            
+            $user = User::with('role')->find(Auth::id());
+            
+            return Inertia::render('Results/Compile', [
+                'auth' => [
+                    'user' => $user,
+                ],
+                'compiled_results' => $compiledResults,
+                'statistics' => $statistics,
+                'classrooms' => Classroom::with('students')->get(),
+                'terms' => Term::with('academicSession')->get(),
+                'selected_classroom' => $request->classroom_id,
+                'selected_term' => $request->term_id,
+                'compilation_success' => true
+            ]);
+            
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['compilation' => 'Failed to compile results: ' . $e->getMessage()]);
+        }
     }
 
     // AI Remarks
@@ -567,6 +657,18 @@ class ResultController extends Controller
     }
 
     // Import/Export functionality
+    public function importPage()
+    {
+        return Inertia::render('Results/Import', [
+            'auth' => [
+                'user' => Auth::user(),
+            ],
+            'terms' => Term::with('academicSession')->get(),
+            'classrooms' => Classroom::all(),
+            'subjects' => Subject::all()
+        ]);
+    }
+
     public function import(Request $request)
     {
         $request->validate([
@@ -576,9 +678,9 @@ class ResultController extends Controller
 
         try {
             Excel::import(new ResultsImport($request->term_id), $request->file('file'));
-            return redirect()->back()->with('success', 'Results imported successfully.');
+            return redirect()->route('admin.results.import')->with('success', 'Results imported successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Import failed: ' . $e->getMessage());
+            return redirect()->route('admin.results.import')->with('error', 'Import failed: ' . $e->getMessage());
         }
     }
 
@@ -596,16 +698,33 @@ class ResultController extends Controller
 
     public function downloadTemplate(Request $request)
     {
-        $request->validate([
-            'term_id' => 'required|exists:terms,id'
-        ]);
+        try {
+            // Get the current active term or the first available term
+            $termId = $request->term_id;
+            
+            if (!$termId) {
+                // Try to get the current active term
+                $activeTerm = \App\Models\Term::where('is_current', true)->first();
+                if ($activeTerm) {
+                    $termId = $activeTerm->id;
+                } else {
+                    // Fallback to the first term
+                    $firstTerm = \App\Models\Term::first();
+                    $termId = $firstTerm ? $firstTerm->id : 1;
+                }
+            }
 
-        $filename = 'results_template_' . date('Y-m-d') . '.xlsx';
-        return Excel::download(new ResultTemplateExport($request->term_id), $filename);
+            $filename = 'results_template_' . date('Y-m-d') . '.xlsx';
+            return Excel::download(new ResultTemplateExport($termId), $filename);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to download template: ' . $e->getMessage());
+        }
     }
 
     public function updateComments(Request $request, Result $result)
     {
+
+        // dd('ok');
         $request->validate([
             'teacher_comment' => 'nullable|string|max:500',
             'principal_comment' => 'nullable|string|max:500',

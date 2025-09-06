@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
 import ResultCommentsModal from '@/Components/ResultCommentsModal';
+import Button from '@/Components/UI/Button';
 import { 
     PlusIcon, 
     PencilIcon, 
@@ -58,7 +59,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
         
         // If a classroom is selected, fetch its students
         if (e.target.value) {
-            axios.get(route('admin.classroom.students', { classroom: e.target.value }))
+            axios.get(route('admin.results.students-by-classroom', { classroom: e.target.value }))
                 .then(response => {
                     setAvailableStudents(response.data);
                 })
@@ -401,36 +402,43 @@ export default function Results({ auth, results, students, subjects, classrooms,
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="mb-6 flex flex-wrap justify-between items-center gap-4">
                         <div className="flex flex-wrap gap-2">
-                            <Link
+                            <Button
+                                as={Link}
                                 href={route('admin.results.create')}
-                                className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                variant="primary"
+                                className="inline-flex items-center"
                             >
                                 <PlusIcon className="h-4 w-4 mr-2" />
                                 Add New Result
-                            </Link>
+                            </Button>
 
-                            <Link
-                                href={route('admin.results.compile.index')}
-                                className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                            <Button
+                                as={Link}
+                                href={route('admin.results.compile')}
+                                variant="success"
+                                className="inline-flex items-center"
                             >
                                 Compile Results
-                            </Link>
+                            </Button>
 
-                            <Link
+                            <Button
+                                as={Link}
                                 href={route('admin.results.analysis')}
-                                className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                variant="purple"
+                                className="inline-flex items-center"
                             >
                                 <ChartBarIcon className="h-4 w-4 mr-2" />
                                 Results Analysis
-                            </Link>
+                            </Button>
 
-                            <button
+                            <Button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                variant="secondary"
+                                className="inline-flex items-center"
                             >
                                 <FunnelIcon className="h-4 w-4 mr-2" />
                                 {showFilters ? 'Hide Filters' : 'Show Filters'}
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
@@ -619,28 +627,28 @@ export default function Results({ auth, results, students, subjects, classrooms,
                                     </div>
 
                                     <div className="flex justify-end space-x-3">
-                                        <button
+                                        <Button
                                             type="button"
                                             onClick={resetFilters}
-                                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
+                                            variant="secondary"
                                         >
                                             Reset
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             type="submit"
                                             disabled={processing}
-                                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                            variant="primary"
                                         >
                                             {processing ? 'Applying...' : 'Apply Filters'}
-                                        </button>
+                                        </Button>
                                     </div>
                                 </form>
                             </div>
                         </Card>
                     )}
 
-                    <Card>
-                        <div className="p-6">
+                    <Card className="shadow-sm">
+                        <div className="p-6 w-full">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">
                                     Results List

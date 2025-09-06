@@ -15,7 +15,9 @@ class Teacher extends Model
         'user_id',
         'employee_id',
         'qualification',
-        'date_joined'
+        'date_joined',
+        'phone',
+        'address'
     ];
 
     protected $casts = [
@@ -35,5 +37,34 @@ class Teacher extends Model
     public function classrooms(): BelongsToMany
     {
         return $this->belongsToMany(Classroom::class, 'classroom_teachers');
+    }
+
+    // CBT Relationships
+    public function createdExams()
+    {
+        return $this->hasMany(Exam::class, 'teacher_id');
+    }
+
+    public function createdQuestions()
+    {
+        return $this->hasMany(Question::class, 'teacher_id');
+    }
+
+    public function getManageableExams()
+    {
+        // Get exams for subjects the teacher is assigned to
+        $subjectIds = $this->subjects()->pluck('subjects.id');
+        
+        return Exam::whereIn('subject_id', $subjectIds)
+            ->orWhere('teacher_id', $this->user_id)
+            ->with(['subject', 'questions'])
+            ->get();
+    }
+
+    public function canManageExam(Exam $exam): bool
+    {
+        // Teacher can manage exam if they created it or if it's for their subject
+        return $exam->teacher_id === $this->user_id || 
+               $this->subjects()->where('subjects.id', $exam->subject_id)->exists();
     }
 }

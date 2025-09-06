@@ -109,9 +109,17 @@ class SubjectController extends Controller
         }
         
         $subjects = $teacher->subjects()
-            ->with(['classrooms', 'students.user'])
-            ->withCount('students')
-            ->get();
+            ->with(['classrooms.students.user'])
+            ->get()
+            ->map(function ($subject) {
+                // Calculate total students across all classrooms for this subject
+                $totalStudents = $subject->classrooms->sum(function ($classroom) {
+                    return $classroom->students->count();
+                });
+                
+                $subject->students_count = $totalStudents;
+                return $subject;
+            });
         
         return Inertia::render('Teacher/Subjects', [
             'subjects' => $subjects

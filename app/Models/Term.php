@@ -34,4 +34,25 @@ class Term extends Model
     {
         return $this->hasMany(Result::class);
     }
+
+    // CBT Relationships
+    public function examSchedules(): HasMany
+    {
+        return $this->hasMany(ExamSchedule::class);
+    }
+
+    public function examTimetables(): HasMany
+    {
+        return $this->hasMany(ExamTimetable::class);
+    }
+
+    public function getTermExams()
+    {
+        return $this->examSchedules()->with(['exam.subject', 'classroom'])->get();
+    }
+
+    public function getTermTimetables()
+    {
+        return $this->examTimetables()->with('classroom')->published()->get();
+    }
 }

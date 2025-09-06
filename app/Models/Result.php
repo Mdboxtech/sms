@@ -23,13 +23,20 @@ class Result extends Model
         'principal_id',
         'teacher_comment',
         'principal_comment',
+        'cbt_exam_attempt_id',
+        'is_cbt_exam',
+        'manual_exam_score',
+        'cbt_synced_at',
     ];
 
     protected $casts = [
         'ca_score' => 'decimal:2',
         'exam_score' => 'decimal:2',
         'total_score' => 'decimal:2',
+        'manual_exam_score' => 'decimal:2',
         'position' => 'integer',
+        'is_cbt_exam' => 'boolean',
+        'cbt_synced_at' => 'datetime',
     ];
 
     public function student(): BelongsTo
@@ -55,6 +62,11 @@ class Result extends Model
     public function principal(): BelongsTo
     {
         return $this->belongsTo(User::class, 'principal_id');
+    }
+
+    public function cbtExamAttempt(): BelongsTo
+    {
+        return $this->belongsTo(StudentExamAttempt::class, 'cbt_exam_attempt_id');
     }
     
     public function termResult(): BelongsTo

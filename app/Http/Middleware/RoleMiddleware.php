@@ -9,8 +9,16 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, ...$roles)
     {
-    
-        if (!$request->user() || !in_array($request->user()->role->name, $roles)) {
+        $user = $request->user();
+        
+        if (!$user) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        // Ensure the role relationship is loaded
+        $user->load('role');
+        
+        if (!$user->role || !in_array($user->role->name, $roles)) {
             abort(403, 'Unauthorized action.');
         }
 
