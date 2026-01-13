@@ -8,9 +8,9 @@ import { useForm } from '@inertiajs/react';
 import axios from 'axios';
 import ResultCommentsModal from '@/Components/ResultCommentsModal';
 import Button from '@/Components/UI/Button';
-import { 
-    PlusIcon, 
-    PencilIcon, 
+import {
+    PlusIcon,
+    PencilIcon,
     EyeIcon,
     SparklesIcon,
     ArrowDownTrayIcon,
@@ -36,9 +36,9 @@ export default function Results({ auth, results, students, subjects, classrooms,
     const [showFilters, setShowFilters] = useState(false);
     const [showCommentsModal, setShowCommentsModal] = useState(false);
     const [selectedResult, setSelectedResult] = useState(null);
-    
+
     const [availableStudents, setAvailableStudents] = useState(students);
-    
+
     const { data, setData, get, processing } = useForm({
         classroom_id: filters?.classroom_id || '', // Classroom must be selected first
         term_id: filters?.term_id || '',
@@ -56,7 +56,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
             classroom_id: e.target.value,
             student_id: '' // Reset student selection when classroom changes
         }));
-        
+
         // If a classroom is selected, fetch its students
         if (e.target.value) {
             axios.get(route('admin.results.students-by-classroom', { classroom: e.target.value }))
@@ -72,7 +72,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
 
         debouncedApplyFilters();
     };
-    
+
     // Create a memoized debounced function using useCallback
     const debouncedApplyFilters = React.useCallback(
         debounce(() => {
@@ -86,7 +86,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
         setData(name, value);
         debouncedApplyFilters();
     };
-    
+
     const applyFilters = (e) => {
         e?.preventDefault();
         router.get(route('admin.results.index'), data, {
@@ -94,7 +94,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
             preserveScroll: true,
         });
     };
-    
+
     const resetFilters = () => {
         setData({
             student_id: '',
@@ -107,7 +107,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
         });
         get(route('admin.results.index'));
     };
-    
+
     const toggleResultSelection = (resultId) => {
         setSelectedResults(prev => {
             if (prev.includes(resultId)) {
@@ -117,7 +117,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
             }
         });
     };
-    
+
     const selectAllResults = () => {
         if (selectedResults.length === results.data.length) {
             setSelectedResults([]);
@@ -125,19 +125,19 @@ export default function Results({ auth, results, students, subjects, classrooms,
             setSelectedResults(results.data.map(result => result.id));
         }
     };
-    
+
     const generateBulkRemarks = async () => {
         if (!selectedResults?.length) {
             alert('Please select at least one result to generate remarks.');
             return;
         }
-        
+
         setIsGeneratingRemarks(true);
         try {
             const response = await axios.post(route('admin.results.generate-remarks'), {
                 result_ids: selectedResults
             });
-            
+
             if (response.data.success) {
                 router.reload({
                     onSuccess: () => {
@@ -152,13 +152,13 @@ export default function Results({ auth, results, students, subjects, classrooms,
             setIsGeneratingRemarks(false);
         }
     };
-    
+
     const deleteResult = (resultId) => {
         if (confirm('Are you sure you want to delete this result?')) {
             router.delete(route('admin.results.destroy', resultId));
         }
     };
-    
+
     const getGrade = (score) => {
         if (score >= 70) return { grade: 'A', remark: 'Excellent', color: 'text-green-600' };
         if (score >= 60) return { grade: 'B', remark: 'Very Good', color: 'text-green-500' };
@@ -174,7 +174,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
         }
 
         setRegeneratingRemarks(prev => ({ ...prev, [result.id]: true }));
-        
+
         try {
             const response = await fetch(route('api.ai.remark'), {
                 method: 'POST',
@@ -197,12 +197,12 @@ export default function Results({ auth, results, students, subjects, classrooms,
             }
 
             const data = await response.json();
-            
+
             if (data.remark) {
                 // Redirect to refresh the page with new data
                 window.location.reload();
             }
-            
+
         } catch (error) {
             console.error('Error regenerating remark:', error);
             alert('Failed to generate remark. Please try again.');
@@ -236,8 +236,8 @@ export default function Results({ auth, results, students, subjects, classrooms,
             header: 'Student',
             render: (row) => (
                 <div>
-                    <Link 
-                        href={route('admin.results.student', row?.student?.id)} 
+                    <Link
+                        href={route('admin.results.student', row?.student?.id)}
                         className="text-sm font-medium text-blue-600 hover:text-blue-900"
                     >
                         {row?.student?.user?.name || 'Unknown Student'}
@@ -251,8 +251,8 @@ export default function Results({ auth, results, students, subjects, classrooms,
         {
             header: 'Class',
             render: (row) => (
-                <Link 
-                    href={route('admin.results.classroom', row?.student?.classroom?.id)} 
+                <Link
+                    href={route('admin.results.classroom', row?.student?.classroom?.id)}
                     className="text-sm text-blue-600 hover:text-blue-900"
                 >
                     {row?.student?.classroom?.name || 'Not assigned'}
@@ -279,7 +279,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
                         <Link href={route('admin.results.term', row.term?.id)} className="text-sm font-medium text-blue-600 hover:text-blue-900">
                             {row.term?.name || 'Unknown Term'}
                         </Link>
-                        <div className="text-xs text-gray-500">{row.term?.academic_session?.name}</div>
+                        <div className="text-xs text-gray-500">{(row.term?.academicSession || row.term?.academic_session)?.name}</div>
                     </div>
                 );
             },
@@ -576,14 +576,14 @@ export default function Results({ auth, results, students, subjects, classrooms,
                                                 <option value="">All Terms</option>
                                                 {terms?.map(term => (
                                                     <option key={term.id} value={term.id}>
-                                                        {term?.academic_session?.name || 'Unknown Session'} - {term?.name || 'Unknown Term'}
+                                                        {(term?.academicSession || term?.academic_session)?.name || 'Unknown Session'} - {term?.name || 'Unknown Term'}
                                                     </option>
                                                 ))}
                                             </select>
                                         </div>
 
                                         <div>
-                                            {console.log('ttt',teachers)}
+                                            {console.log('ttt', teachers)}
                                             <label htmlFor="teacher_id" className="block text-sm font-medium text-gray-700 mb-1">
                                                 <UserIcon className="h-4 w-4 inline mr-1" /> Teacher
                                             </label>
@@ -666,7 +666,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
                                 </div>
                             </div>
                             <DataTable columns={columns} data={results.data} />
-                            
+
                             {results.data.length > 0 && results.links && (
                                 <div className="mt-4 flex justify-between items-center">
                                     <div className="text-sm text-gray-500">

@@ -63,7 +63,7 @@ class ResultsImport implements ToModel, WithHeadingRow, WithValidation
                 'ca_score' => $caScore,
                 'exam_score' => $examScore,
                 'total_score' => $totalScore,
-                'remark' => $row['remark'] ?? $existingResult->remark,
+                'remark' => $row['remark'] ?? $this->getGradeRemark($totalScore),
                 'updated_at' => now(),
             ]);
             return null; // Don't create new record
@@ -76,9 +76,18 @@ class ResultsImport implements ToModel, WithHeadingRow, WithValidation
             'ca_score' => $caScore,
             'exam_score' => $examScore,
             'total_score' => $totalScore,
-            'remark' => $row['remark'] ?? null,
+            'remark' => $row['remark'] ?? $this->getGradeRemark($totalScore),
             'teacher_id' => Auth::id(),
         ]);
+    }
+
+    protected function getGradeRemark($score)
+    {
+        if ($score >= 70) return 'Excellent';
+        if ($score >= 60) return 'Very Good';
+        if ($score >= 50) return 'Good';
+        if ($score >= 40) return 'Pass';
+        return 'Fail';
     }
 
     public function rules(): array

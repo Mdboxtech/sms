@@ -19,14 +19,17 @@ import {
     CheckCircleIcon,
     ExclamationTriangleIcon,
     PaintBrushIcon,
-    SwatchIcon
+    SwatchIcon,
+    DocumentTextIcon
 } from '@heroicons/react/24/outline';
+import ReportCardSettings from './Partials/ReportCardSettings';
 
 export default function Settings({
     auth,
     systemInfo,
     appSettings,
     formThemeSettings,
+    reportCardSettings,
     currentSession,
     currentTerm,
     backupInfo,
@@ -245,6 +248,7 @@ export default function Settings({
     const tabs = [
         { id: 'general', name: 'General', icon: CogIcon },
         { id: 'academic', name: 'Academic', icon: AcademicCapIcon },
+        { id: 'report_cards', name: 'Report Cards', icon: DocumentTextIcon },
         { id: 'theme', name: 'Theme & Colors', icon: PaintBrushIcon },
         { id: 'system', name: 'System', icon: ServerIcon },
         { id: 'maintenance', name: 'Maintenance', icon: ArrowPathIcon },
@@ -610,6 +614,11 @@ export default function Settings({
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Report Card Settings */}
+                        {activeTab === 'report_cards' && (
+                            <ReportCardSettings settings={reportCardSettings} />
                         )}
 
                         {/* Theme Settings */}
@@ -1132,7 +1141,7 @@ export default function Settings({
                         )}
                     </div>
                 </Card>
-            </div>
-        </AuthenticatedLayout>
+            </div >
+        </AuthenticatedLayout >
     );
 }

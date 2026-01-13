@@ -74,23 +74,20 @@ export default function BulkCreate({ auth, students = [], subjects = [], terms =
                         <form onSubmit={handleSubmit} className="space-y-6 p-6">
                             <div className="mb-6">
                                 <InputLabel htmlFor="term_id" value="Term" />
-                                <SelectInput
-                                    id="term_id"
-                                    className="mt-1 block w-full"
+                                <SearchableSelect
                                     value={data.term_id}
-                                    onChange={e => setData('term_id', e.target.value)}
-                                >
-                                    <option value="">Select Term</option>
-                                    {terms.map(term => {
-                                        const sessionName = term.academicSession?.name || 'Unknown Session';
+                                    onChange={value => setData('term_id', value)}
+                                    options={terms}
+                                    placeholder="Select a term"
+                                    displayValue={(term) => {
+                                        if (!term) return '';
+                                        const session = term.academicSession || term.academic_session;
+                                        const sessionName = session?.name || 'Unknown Session';
                                         const termName = term.name || 'Unknown Term';
-                                        return (
-                                            <option key={term.id} value={term.id}>
-                                                {sessionName} - {termName}
-                                            </option>
-                                        );
-                                    })}
-                                </SelectInput>
+                                        return `${sessionName} - ${termName}`;
+                                    }}
+                                    error={errors.term_id}
+                                />
                                 <InputError message={errors.term_id} className="mt-2" />
                             </div>
 

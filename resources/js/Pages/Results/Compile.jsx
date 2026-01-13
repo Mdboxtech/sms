@@ -6,19 +6,20 @@ import Button from '@/Components/UI/Button';
 import { ArrowLeftIcon, DocumentArrowDownIcon, DocumentTextIcon, SparklesIcon, PencilIcon, ChatBubbleLeftIcon, MagnifyingGlassIcon, XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import CompileResultCommentsModal from '@/Components/CompileResultCommentsModal';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function CompileResults({ 
-    auth, 
-    classrooms = [], 
-    terms = [], 
-    results = null, 
+export default function CompileResults({
+    auth,
+    classrooms = [],
+    terms = [],
+    results = null,
     compiled_results = null,
     statistics = null,
-    students = [], 
-    selected_classroom = null, 
-    selected_term = null, 
+    students = [],
+    selected_classroom = null,
+    selected_term = null,
     filters = {},
-    compilation_success = false 
+    compilation_success = false
 }) {
     const [loading, setLoading] = useState(false);
     const [generatingRemarks, setGeneratingRemarks] = useState(false);
@@ -76,11 +77,11 @@ export default function CompileResults({
     useEffect(() => {
         // Handle both regular results and compiled results
         const resultsToProcess = results || compiled_results;
-        
+
         if (resultsToProcess) {
             // Group results by student
             const grouped = {};
-            
+
             if (compiled_results && Array.isArray(compiled_results)) {
                 // Handle compiled results format
                 compiled_results.forEach(compiledResult => {
@@ -107,7 +108,7 @@ export default function CompileResults({
                     }
                 });
             }
-            
+
             setGroupedResults(grouped);
             setShowFilters(false);
         }
@@ -158,23 +159,23 @@ export default function CompileResults({
             classroom_id: classroomId,
             student_id: '' // Reset student selection when classroom changes
         }));
-        
+
         // Fetch students for the selected classroom
         fetchStudentsByClassroom(classroomId);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         // Validate required fields
         if (!data.classroom_id || !data.term_id) {
             alert('Please select both classroom and term before compiling results.');
             return;
         }
-        
+
         console.log('Submitting compilation with data:', data);
         setLoading(true);
-        
+
         post(route('admin.results.compile'), {
             data: data,
             onSuccess: (page) => {
@@ -230,7 +231,7 @@ export default function CompileResults({
     // Apply filters without compilation
     const handleApplyFilters = () => {
         const params = new URLSearchParams();
-        
+
         Object.entries(data).forEach(([key, value]) => {
             if (value) {
                 params.append(key, value);
@@ -256,7 +257,7 @@ export default function CompileResults({
     const toggleAllResults = (studentResults) => {
         const resultIds = studentResults.map(result => result.id);
         const allSelected = resultIds.every(id => selectedResults.includes(id));
-        
+
         if (allSelected) {
             // Remove all
             setSelectedResults(prev => prev.filter(id => !resultIds.includes(id)));
@@ -304,11 +305,11 @@ export default function CompileResults({
     const prepareStudentForModal = (student, studentResults) => {
         // Get current classroom information
         const currentClassroomInfo = getCurrentClassroom();
-        
+
         // Ensure we have valid IDs
-        const classroomId = selected_classroom ? parseInt(selected_classroom) : 
-                           (student.classroom_id ? parseInt(student.classroom_id) : null);
-        
+        const classroomId = selected_classroom ? parseInt(selected_classroom) :
+            (student.classroom_id ? parseInt(student.classroom_id) : null);
+
         // Create a complete student object with results and classroom info
         const studentWithResults = {
             ...student,
@@ -358,9 +359,9 @@ export default function CompileResults({
                                 </Button>
                                 <Button
                                     as={Link}
-                                    href={route('admin.results.export', { 
-                                        classroom_id: selected_classroom, 
-                                        term_id: selected_term 
+                                    href={route('admin.results.export', {
+                                        classroom_id: selected_classroom,
+                                        term_id: selected_term
                                     })}
                                     variant="success"
                                     className="inline-flex items-center"
@@ -441,20 +442,18 @@ export default function CompileResults({
                                                 <label htmlFor="student_id" className="block text-sm font-medium text-gray-700 mb-1">
                                                     Student (Optional)
                                                 </label>
-                                                <select
-                                                    id="student_id"
-                                                    name="student_id"
+                                                <SearchableSelect
+                                                    options={availableStudents.map(student => ({
+                                                        id: student.id,
+                                                        name: `${student.user?.name || 'Unknown'} (${student.admission_number})`
+                                                    }))}
                                                     value={data.student_id}
-                                                    onChange={e => setData('student_id', e.target.value)}
-                                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                                >
-                                                    <option value="">All Students</option>
-                                                    {availableStudents.map(student => (
-                                                        <option key={student.id} value={student.id}>
-                                                            {student.user?.name} ({student.admission_number})
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    onChange={(value) => setData('student_id', value)}
+                                                    placeholder="All Students"
+                                                    displayValue={(option) => option.name}
+                                                    emptyMessage="No students found"
+                                                    className="mt-1"
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -540,7 +539,7 @@ export default function CompileResults({
                                             {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
                                         </button>
                                     </div>
-                                    
+
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -625,7 +624,7 @@ export default function CompileResults({
                                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                             <dt className="text-sm font-medium text-gray-500">Total Students</dt>
                                             <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                                {Object.keys(filteredGroupedResults).length} 
+                                                {Object.keys(filteredGroupedResults).length}
                                                 {searchQuery && ` (filtered from ${Object.keys(groupedResults).length})`}
                                             </dd>
                                         </div>
@@ -646,14 +645,14 @@ export default function CompileResults({
                                                             if (validResults.length === 0) return '0%';
                                                             return (validResults.reduce((acc, result) => acc + parseFloat(result.total_score || 0), 0) / validResults.length).toFixed(1) + '%';
                                                         } else if (compiled_results && Array.isArray(compiled_results) && compiled_results.length > 0) {
-                                                            const validResults = compiled_results.filter(compiledResult => 
-                                                                compiledResult && 
-                                                                compiledResult !== null && 
-                                                                compiledResult !== undefined && 
+                                                            const validResults = compiled_results.filter(compiledResult =>
+                                                                compiledResult &&
+                                                                compiledResult !== null &&
+                                                                compiledResult !== undefined &&
                                                                 typeof compiledResult.average_score !== 'undefined'
                                                             );
                                                             if (validResults.length === 0) return '0%';
-                                                            const totalAverage = validResults.reduce((acc, compiledResult) => 
+                                                            const totalAverage = validResults.reduce((acc, compiledResult) =>
                                                                 acc + parseFloat(compiledResult.average_score || 0), 0
                                                             );
                                                             return (totalAverage / validResults.length).toFixed(1) + '%';
@@ -704,16 +703,16 @@ export default function CompileResults({
                                                         // Set selectedStudent with both student and results data
                                                         // Handle both regular results and compiled results structure
                                                         let termResult = null;
-                                                        
+
                                                         if (compiled_results) {
                                                             // For compiled results, termResult is at the compiledResult level
-                                                            const compiledResult = compiled_results.find(cr => cr.student.id === student.id);
+                                                            const compiledResult = compiled_results.find(cr => cr?.student?.id === student.id);
                                                             termResult = compiledResult?.term_result;
                                                         } else {
                                                             // For regular results, termResult is attached to individual results
                                                             termResult = studentResults[0]?.termResult;
                                                         }
-                                                        
+
                                                         setSelectedStudent({
                                                             student,
                                                             results: studentResults, // Pass the student's results
@@ -728,14 +727,14 @@ export default function CompileResults({
                                                     {(() => {
                                                         // Check for comments in both structures
                                                         let hasTeacherComment = false;
-                                                        
+
                                                         if (compiled_results) {
-                                                            const compiledResult = compiled_results.find(cr => cr.student.id === student.id);
+                                                            const compiledResult = compiled_results.find(cr => cr?.student?.id === student.id);
                                                             hasTeacherComment = compiledResult?.term_result?.teacher_comment;
                                                         } else {
                                                             hasTeacherComment = studentResults[0]?.termResult?.teacher_comment;
                                                         }
-                                                        
+
                                                         return hasTeacherComment ? 'Edit Comments' : 'Add Comments';
                                                     })()}
                                                 </Button>

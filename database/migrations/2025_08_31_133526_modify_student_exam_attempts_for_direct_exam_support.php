@@ -16,12 +16,18 @@ return new class extends Migration
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         
         Schema::table('student_exam_attempts', function (Blueprint $table) {
+            // Drop the foreign key first to allow dropping the index
+            $table->dropForeign(['exam_schedule_id']);
+
             // Drop the unique constraint that included exam_schedule_id
             $table->dropUnique('student_exam_attempts_exam_schedule_id_student_id_unique');
             
             // Make exam_schedule_id nullable to support direct exam attempts
             $table->foreignId('exam_schedule_id')->nullable()->change();
             
+            // Re-add the foreign key constraint
+            $table->foreign('exam_schedule_id')->references('id')->on('exam_schedules')->onDelete('cascade');
+
             // Add exam_id field for direct exam attempts
             $table->foreignId('exam_id')->nullable()->constrained()->onDelete('cascade')->after('exam_schedule_id');
         });

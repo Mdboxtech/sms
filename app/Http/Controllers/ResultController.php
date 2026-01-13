@@ -184,8 +184,9 @@ class ResultController extends Controller
 
     public function create()
     {
+        // Fetch classrooms instead of all students for better performance
         return Inertia::render('Results/Create', [
-            'students' => Student::with('user')->get(),
+            'classrooms' => Classroom::all(),
             'subjects' => Subject::all(),
             'terms' => Term::with('academicSession')
                 ->whereHas('academicSession', function($query) {
@@ -226,6 +227,7 @@ class ResultController extends Controller
             'ca_score' => $request->ca_score,
             'exam_score' => $request->exam_score,
             'total_score' => $totalScore,
+            'remark' => $this->getGradeRemark($totalScore),
             'teacher_id' => Auth::id()
         ]);
 
@@ -275,6 +277,7 @@ class ResultController extends Controller
             'ca_score' => $request->ca_score,
             'exam_score' => $request->exam_score,
             'total_score' => $totalScore,
+            'remark' => $this->getGradeRemark($totalScore),
         ]);
 
         if ($request->generate_remark) {
@@ -329,6 +332,7 @@ class ResultController extends Controller
                         'ca_score' => $resultData['ca_score'],
                         'exam_score' => $resultData['exam_score'],
                         'total_score' => $resultData['ca_score'] + $resultData['exam_score'],
+                        'remark' => $this->getGradeRemark($resultData['ca_score'] + $resultData['exam_score']),
                         'teacher_id' => Auth::id()
                     ]);
                 }
@@ -354,7 +358,8 @@ class ResultController extends Controller
             $result->update([
                 'ca_score' => $resultData['ca_score'],
                 'exam_score' => $resultData['exam_score'],
-                'total_score' => $resultData['ca_score'] + $resultData['exam_score']
+                'total_score' => $resultData['ca_score'] + $resultData['exam_score'],
+                'remark' => $this->getGradeRemark($resultData['ca_score'] + $resultData['exam_score']),
             ]);
         }
 
@@ -629,6 +634,15 @@ class ResultController extends Controller
         }
     }
 
+    protected function getGradeRemark($score)
+    {
+        if ($score >= 70) return 'Excellent';
+        if ($score >= 60) return 'Very Good';
+        if ($score >= 50) return 'Good';
+        if ($score >= 40) return 'Pass';
+        return 'Fail';
+    }
+
     protected function generateAIRemark(Result $result)
     {
         $student = $result->student->user->name;
@@ -655,7 +669,7 @@ class ResultController extends Controller
             return $response->json()['choices'][0]['message']['content'];
         }
 
-        return "Keep up the good work!"; // Fallback remark
+        return $this->getGradeRemark($score); // Fallback to standard remark
     }
 
     // Import/Export functionality

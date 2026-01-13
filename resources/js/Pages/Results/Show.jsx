@@ -24,7 +24,7 @@ export default function ShowResult({ auth, result }) {
         }
 
         setRegeneratingRemark(true);
-        
+
         try {
             const response = await fetch(route('api.ai.remark'), {
                 method: 'POST',
@@ -47,12 +47,12 @@ export default function ShowResult({ auth, result }) {
             }
 
             const data = await response.json();
-            
+
             if (data.remark) {
                 // Redirect to refresh the page with new data
                 window.location.reload();
             }
-            
+
         } catch (error) {
             console.error('Error regenerating remark:', error);
             alert('Failed to generate remark. Please try again.');
@@ -136,7 +136,7 @@ export default function ShowResult({ auth, result }) {
                                             <span className="text-sm font-medium text-gray-500">Term:</span>
                                             <p className="text-gray-800">
                                                 {result?.term
-                                                    ? `${result.term.academicSession?.name || 'Unknown Session'} - ${result.term.name || 'Unknown Term'}`
+                                                    ? `${(result.term.academicSession || result.term.academic_session)?.name || 'Unknown Session'} - ${result.term.name || 'Unknown Term'}`
                                                     : 'Unknown Term'}
                                             </p>
                                         </div>

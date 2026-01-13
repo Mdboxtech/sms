@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { Head, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Card, PageHeader } from '@/Components/UI';
@@ -7,9 +8,11 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SelectInput from '@/Components/SelectInput';
+import SearchableSelect from '@/Components/SearchableSelect';
 
-export default function CreateResult({ auth, students = [], subjects = [], terms = [] }) {
+export default function CreateResult({ auth, classrooms = [], subjects = [], terms = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
+        classroom_id: '',
         student_id: '',
         subject_id: '',
         term_id: '',
@@ -19,6 +22,32 @@ export default function CreateResult({ auth, students = [], subjects = [], terms
     });
 
     const [totalScore, setTotalScore] = useState(0);
+    const [filteredStudents, setFilteredStudents] = useState([]);
+    const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+
+    const handleClassroomChange = async (value) => {
+        const classroomId = value; // SearchableSelect returns the ID directly
+        setData('classroom_id', classroomId);
+
+        // Reset student selection
+        setData(data => ({ ...data, student_id: '' }));
+        setFilteredStudents([]);
+
+        if (classroomId) {
+            setIsLoadingStudents(true);
+            try {
+                // Use the route helper if available, or fallback to fixed path
+                const url = route('admin.results.students-by-classroom', classroomId);
+                const response = await axios.get(url);
+                setFilteredStudents(response.data);
+            } catch (error) {
+                console.error("Failed to fetch students:", error);
+                alert("Failed to load students for this classroom.");
+            } finally {
+                setIsLoadingStudents(false);
+            }
+        }
+    };
 
     const calculateTotal = (ca, exam) => {
         const caScore = parseFloat(ca) || 0;
@@ -38,6 +67,7 @@ export default function CreateResult({ auth, students = [], subjects = [], terms
     };
 
     const validateForm = () => {
+        if (!data.classroom_id) return 'Please select a classroom';
         if (!data.student_id) return 'Please select a student';
         if (!data.subject_id) return 'Please select a subject';
         if (!data.term_id) return 'Please select a term';
@@ -50,7 +80,7 @@ export default function CreateResult({ auth, students = [], subjects = [], terms
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         const error = validateForm();
         if (error) {
             alert(error);
@@ -59,7 +89,7 @@ export default function CreateResult({ auth, students = [], subjects = [], terms
 
         post(route('admin.results.store'), {
             onSuccess: () => {
-                reset();
+                reset('student_id', 'ca_score', 'exam_score'); // Keep classroom selected
                 setTotalScore(0);
             },
             onError: (errors) => {
@@ -82,23 +112,32 @@ export default function CreateResult({ auth, students = [], subjects = [], terms
                     <Card>
                         <form onSubmit={handleSubmit} className="space-y-6 p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Classroom Selection */}
+                                <div>
+                                    <InputLabel htmlFor="classroom_id" value="Classroom" />
+                                    <SearchableSelect
+                                        value={data.classroom_id}
+                                        onChange={handleClassroomChange}
+                                        options={classrooms}
+                                        placeholder="Select a classroom"
+                                        displayValue={(classroom) => classroom?.name}
+                                        error={errors.classroom_id}
+                                    />
+                                </div>
+
                                 {/* Student Selection */}
                                 <div>
                                     <InputLabel htmlFor="student_id" value="Student" />
-                                    <SelectInput
-                                        id="student_id"
-                                        className="mt-1 block w-full"
+                                    <SearchableSelect
                                         value={data.student_id}
-                                        onChange={e => setData('student_id', e.target.value)}
-                                    >
-                                        <option value="">Select Student</option>
-                                        {students.map(student => (
-                                            <option key={student.id} value={student.id}>
-                                                {student.user?.name || 'Unknown Student'}
-                                            </option>
-                                        ))}
-                                    </SelectInput>
-                                    <InputError message={errors.student_id} className="mt-2" />
+                                        onChange={value => setData('student_id', value)}
+                                        options={filteredStudents}
+                                        placeholder={isLoadingStudents ? "Loading Students..." : "Select a student"}
+                                        disabled={!data.classroom_id || isLoadingStudents}
+                                        displayValue={(student) => student?.user?.name ? `${student.user.name} (${student.admission_number})` : ''}
+                                        error={errors.student_id}
+                                        isLoading={isLoadingStudents}
+                                    />
                                 </div>
 
                                 {/* Subject Selection */}
@@ -123,24 +162,20 @@ export default function CreateResult({ auth, students = [], subjects = [], terms
                                 {/* Term Selection */}
                                 <div>
                                     <InputLabel htmlFor="term_id" value="Term" />
-                                    <SelectInput
-                                        id="term_id"
-                                        className="mt-1 block w-full"
+                                    <SearchableSelect
                                         value={data.term_id}
-                                        onChange={e => setData('term_id', e.target.value)}
-                                    >
-                                        <option value="">Select Term</option>
-                                        {terms.map(term => {
-                                            const sessionName = term.academicSession?.name || 'Unknown Session';
+                                        onChange={value => setData('term_id', value)}
+                                        options={terms}
+                                        placeholder="Select a term"
+                                        displayValue={(term) => {
+                                            if (!term) return '';
+                                            const session = term.academicSession || term.academic_session;
+                                            const sessionName = session?.name || 'Unknown Session';
                                             const termName = term.name || 'Unknown Term';
-                                            return (
-                                                <option key={term.id} value={term.id}>
-                                                    {sessionName} - {termName}
-                                                </option>
-                                            );
-                                        })}
-                                    </SelectInput>
-                                    <InputError message={errors.term_id} className="mt-2" />
+                                            return `${sessionName} - ${termName}`;
+                                        }}
+                                        error={errors.term_id}
+                                    />
                                 </div>
                             </div>
 

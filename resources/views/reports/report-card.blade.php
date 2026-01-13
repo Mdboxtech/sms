@@ -16,23 +16,7 @@
         }
         
         body {
-            font-family: Ar        <!-- Professional Header with Logo -->
-        <div class="header">
-            <!-- Header Content with Logo centered above -->
-            <div class="header-content">
-                <!-- School Logo centered -->
-                <div class="school-logo" style="margin: 0 auto 10px auto;">
-                    @if(isset($app_settings['school_logo']) && !empty($app_settings['school_logo']))
-                        <img src="{{ $app_settings['school_logo'] }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                    @else
-                        <span style="font-size: 20px;">🎓</span>
-                    @endif
-                </div>
-
-                <div class="school-name">{{ $school_info['name'] }}</div>
-                <div class="school-details">
-                    {{ $school_info['address'] }}</div>
-            line-height: 1.2;
+            font-family: Arial, sans-serif;
             color: #333;
             font-size: 9px;
             background: white;
@@ -424,7 +408,7 @@
                 <!-- School Logo centered -->
                 <div class="school-logo" style="margin: 0 auto 10px auto;">
                     @if(isset($app_settings['school_logo']) && !empty($app_settings['school_logo']))
-                        <img src="{{ public_path('storage/' . $app_settings['school_logo']) }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        <img src="{{ $app_settings['school_logo'] }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     @else
                         <span style="font-size: 20px;">🎓</span>
                     @endif
@@ -440,7 +424,7 @@
                         <br><em>"{{ $school_info['tagline'] }}"</em>
                     @endif
                 </div>
-                <div class="report-title">Student Report Card</div>
+                <div class="report-title">{{ $report_card_settings['header_text'] ?? 'STUDENT REPORT CARD' }}</div>
                 <div class="session-info">{{ $academic_session->name }} - {{ $term->name }}</div>
             </div>
         </div>
@@ -481,8 +465,13 @@
                         <div style="color: #2d3748; font-weight: 500; font-size: 8px;">{{ $student->date_of_birth ? date('d/m/Y', strtotime($student->date_of_birth)) : 'N/A' }}</div>
                     </td>
                     <td style="padding: 6px; border: 1px solid #e2e8f0; background: white;">
+                        @if($report_card_settings['show_position'])
                         <div style="color: #4a5568; font-weight: 600; font-size: 7px; margin-bottom: 1px;">Position:</div>
                         <div style="color: #2d3748; font-weight: 500; font-size: 8px;">{{ $statistics['position'] }} of {{ $statistics['total_students'] }}</div>
+                        @else
+                        <div style="color: #4a5568; font-weight: 600; font-size: 7px; margin-bottom: 1px;">Term:</div>
+                        <div style="color: #2d3748; font-weight: 500; font-size: 8px;">{{ $term->name }}</div>
+                        @endif
                     </td>
                 </tr>
             </table>
@@ -504,10 +493,12 @@
                         <div style="color: #3b82f6; font-size: 14px; font-weight: bold; margin-bottom: 1px;">{{ $statistics['gpa'] }}</div>
                         <div style="color: #64748b; font-size: 7px; text-transform: uppercase; font-weight: 500;">GPA</div>
                     </td> --}}
+                    @if($report_card_settings['show_attendance'])
                     <td style="text-align: center; padding: 6px; border: 1px solid #e2e8f0; background: white;">
                         <div style="color: #3b82f6; font-size: 14px; font-weight: bold; margin-bottom: 1px;">{{ $attendance['attendance_percentage'] }}%</div>
                         <div style="color: #64748b; font-size: 7px; text-transform: uppercase; font-weight: 500;">Attendance</div>
                     </td>
+                    @endif
                 </tr>
             </table>
         </div>
@@ -523,7 +514,9 @@
                         <th>Exam</th>
                         <th>Total</th>
                         <th>Grade</th>
+                        @if($report_card_settings['show_position'])
                         <th>Pos</th>
+                        @endif
                         <th>Remark</th>
                     </tr>
                 </thead>
@@ -537,7 +530,9 @@
                         <td class="grade-cell grade-{{ substr($result->grade_info['grade'], 0, 1) }}">
                             {{ $result->grade_info['grade'] }}
                         </td>
+                        @if($report_card_settings['show_position'])
                         <td>{{ $result->position ?? '-' }}</td>
+                        @endif
                         <td>{{ $result->grade_info['remark'] }}</td>
                     </tr>
                     @endforeach
@@ -565,20 +560,24 @@
                             <div style="color: #3b82f6; font-weight: bold; font-size: 12px;">{{ $statistics['average_score'] }}%</div>
                             <div style="color: #64748b; font-size: 6px;">Your Average</div>
                         </td>
+                        @if($report_card_settings['show_class_average'])
                         <td style="text-align: center; padding: 3px; background: white; border: 1px solid #e2e8f0;">
                             <div style="color: #64748b; font-weight: bold; font-size: 12px;">{{ $class_statistics['class_average'] }}%</div>
                             <div style="color: #64748b; font-size: 6px;">Class Average</div>
                         </td>
+                        @endif
                     </tr>
                     <tr>
                         <td style="text-align: center; padding: 3px; background: white; border: 1px solid #e2e8f0;">
                             <div style="color: #22c55e; font-weight: bold; font-size: 12px;">{{ $class_statistics['highest_average'] }}%</div>
                             <div style="color: #64748b; font-size: 6px;">Highest</div>
                         </td>
+                        @if($report_card_settings['show_position'])
                         <td style="text-align: center; padding: 3px; background: white; border: 1px solid #e2e8f0;">
                             <div style="color: #f59e0b; font-weight: bold; font-size: 12px;">{{ $statistics['position'] }}/{{ $statistics['total_students'] }}</div>
                             <div style="color: #64748b; font-size: 6px;">Position</div>
                         </td>
+                        @endif
                     </tr>
                 </table>
             </div>
@@ -611,14 +610,18 @@
         <div class="comments-section">
             <div class="section-title">Comments & Remarks</div>
             <div class="comment-grid">
+                @if($report_card_settings['show_teacher_comment'])
                 <div class="comment-box">
                     <div class="comment-title">Teacher's Comment</div>
                     <div class="comment-text">{{ $comments['class_teacher'] }}</div>
                 </div>
+                @endif
+                @if($report_card_settings['show_principal_comment'])
                 <div class="comment-box">
                     <div class="comment-title">Principal's Comment</div>
                     <div class="comment-text">{{ $comments['principal'] }}</div>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -639,7 +642,10 @@
                 </div>
             </div>
             <div class="generated-info">
-                Generated: {{ $generated_on }} | Excellence Academy SMS
+                Generated: {{ $generated_on }} | {{ $school_info['name'] }}
+                @if(!empty($report_card_settings['disclaimer']))
+                    <br><span style="font-style: italic;">{{ $report_card_settings['disclaimer'] }}</span>
+                @endif
             </div>
         </div>
     </div>

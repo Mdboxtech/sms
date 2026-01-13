@@ -33,6 +33,9 @@ class ResultCompilerService
             // Calculate positions for all students in the class
             $this->calculateClassPositions($compiledResults, $termId);
             
+            // Filter out null entries (students with no results in this term)
+            $compiledResults = array_values(array_filter($compiledResults, fn($r) => $r !== null));
+            
             DB::commit();
             
             return $compiledResults;

@@ -183,6 +183,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/reset-corrupted', [SettingsController::class, 'resetCorruptedSettings'])->name('reset.corrupted');
             Route::post('/active-session', [SettingsController::class, 'setActiveSession'])->name('active.session');
             Route::post('/active-term', [SettingsController::class, 'setActiveTerm'])->name('active.term');
+            Route::post('/report-card', [SettingsController::class, 'updateReportCard'])->name('update.report-card');
             
             // Payment Settings
             Route::get('/payment', [SettingsController::class, 'paymentSettings'])->name('payment');

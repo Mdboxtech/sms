@@ -204,11 +204,16 @@ class ReportCardController extends Controller
         $student = Student::with(['user', 'classroom'])->findOrFail($studentId);
         $term = Term::with('academicSession')->findOrFail($termId);
         
-        // Use the ReportCardService to generate the PDF with proper settings
-        $pdf = $this->reportCardService->generateReportCard($student, $term);
-        
-        // Return the PDF as a download
-        return $pdf->download("report-card-{$student->admission_number}-{$term->name}.pdf");
+        try {
+            // Use the ReportCardService to generate the PDF with proper settings
+            $pdf = $this->reportCardService->generateReportCard($student, $term);
+            
+            // Return the PDF as a download
+            return $pdf->download("report-card-{$student->admission_number}-{$term->name}.pdf");
+        } catch (\Exception $e) {
+            // Handle no results case gracefully
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 
     /**

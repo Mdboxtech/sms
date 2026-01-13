@@ -62,7 +62,7 @@ export default function EditResult({ auth, result, students = [], subjects = [],
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         const error = validateForm();
         if (error) {
             alert(error);
@@ -128,7 +128,7 @@ export default function EditResult({ auth, result, students = [], subjects = [],
                                         className="mt-1 block w-full bg-gray-100"
                                         value={
                                             result?.term
-                                                ? `${result.term.academicSession?.name || 'Unknown Session'} - ${result.term.name || 'Unknown Term'}`
+                                                ? `${(result.term.academicSession || result.term.academic_session)?.name || 'Unknown Session'} - ${result.term.name || 'Unknown Term'}`
                                                 : 'Unknown Term'
                                         }
                                         disabled
