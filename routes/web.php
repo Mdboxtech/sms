@@ -52,6 +52,9 @@ Route::get('/', function () {
 // Public Webhook Routes (no authentication required)
 Route::post('/webhook/paystack', [WebhookController::class, 'paystack'])->name('webhook.paystack');
 
+// PWA Manifest Route (public, no auth required)
+Route::get('/manifest.json', [App\Http\Controllers\ManifestController::class, 'index'])->name('manifest');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Profile routes (accessible by all authenticated users)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
