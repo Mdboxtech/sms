@@ -219,7 +219,8 @@ class SettingsController extends Controller
             );
 
             // Clear settings cache
-            Cache::forget('settings');
+            // Clear settings cache
+            Setting::clearCache();
 
             return redirect()->route('admin.settings.index')->with('success', 'System settings updated successfully.');
         } catch (\Exception $e) {
@@ -296,7 +297,8 @@ class SettingsController extends Controller
             );
 
             // Clear settings cache
-            Cache::forget('settings');
+            // Clear settings cache
+            Setting::clearCache();
 
             return redirect()->route('admin.settings.index')->with('success', 'Theme settings updated successfully.');
         } catch (\Exception $e) {
@@ -360,7 +362,8 @@ class SettingsController extends Controller
             }
 
             // Clear settings cache
-            Cache::forget('settings');
+            // Clear settings cache
+            Setting::clearCache();
 
             return redirect()->route('admin.settings.index')->with('success', 'Report card settings updated successfully.');
         } catch (\Exception $e) {
