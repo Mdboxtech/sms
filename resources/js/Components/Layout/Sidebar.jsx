@@ -64,51 +64,38 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const primaryEnd = themeSettings?.primary_end || '#8b5cf6';
     const accentColor = themeSettings?.accent_color || '#10b981';
 
-    // Auto-expand menus with active children and auto-close menus without active children
+    // Auto-expand menus with active children on URL change only
     useEffect(() => {
-        const navigation = navigationItems[auth.user.role.name] || [];
-        const newOpenMenus = { ...openMenus };
-        const newManuallyOpened = { ...manuallyOpenedMenus };
-        let hasChanges = false;
-        let hasManualChanges = false;
+        const navigation = navigationItems[auth.user?.role?.name] || [];
 
+        // Find menus that have active children
+        const menusWithActiveChildren = {};
         navigation.forEach(item => {
             if (item.children) {
-                const hasActiveChild = item.children.some(child => isRouteActive(child.routeName || child.href));
-
-                // Auto-expand if has active child and not already open
-                if (hasActiveChild && !newOpenMenus[item.name]) {
-                    newOpenMenus[item.name] = true;
-                    hasChanges = true;
-                }
-
-                // Auto-close if no active child, currently open, and not manually opened
-                if (!hasActiveChild && newOpenMenus[item.name] && !manuallyOpenedMenus[item.name]) {
-                    newOpenMenus[item.name] = false;
-                    hasChanges = true;
-                }
-
-                // Reset manual state if we navigate to an active child (user found what they were looking for)
-                if (hasActiveChild && manuallyOpenedMenus[item.name]) {
-                    newManuallyOpened[item.name] = false;
-                    hasManualChanges = true;
+                const hasActiveChild = item.children.some(child =>
+                    isRouteActive(child.routeName || child.href)
+                );
+                if (hasActiveChild) {
+                    menusWithActiveChildren[item.name] = true;
                 }
             }
         });
 
-        if (hasChanges) {
-            setOpenMenus(newOpenMenus);
-            try {
-                localStorage.setItem('sidebar-menu-states', JSON.stringify(newOpenMenus));
-            } catch (e) {
-                // Ignore localStorage errors
-            }
+        // Only update if we have active children to expand
+        if (Object.keys(menusWithActiveChildren).length > 0) {
+            setOpenMenus(prev => {
+                const updated = { ...prev, ...menusWithActiveChildren };
+                // Save to localStorage
+                try {
+                    localStorage.setItem('sidebar-menu-states', JSON.stringify(updated));
+                } catch (e) {
+                    // Ignore localStorage errors
+                }
+                return updated;
+            });
         }
+    }, [url]); // Only depend on URL changes, not manuallyOpenedMenus
 
-        if (hasManualChanges) {
-            setManuallyOpenedMenus(newManuallyOpened);
-        }
-    }, [url, manuallyOpenedMenus]);
 
     // Helper function to check if a route is active
     const isRouteActive = (routeName) => {
