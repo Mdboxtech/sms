@@ -20,7 +20,8 @@ import {
     AcademicCapIcon,
     SparklesIcon,
     GlobeAltIcon,
-    Bars3Icon
+    Bars3Icon,
+    ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 
 export default function Header({ onMenuClick }) {
@@ -28,6 +29,36 @@ export default function Header({ onMenuClick }) {
     const { isDarkMode, toggleDarkMode } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+    // PWA Install Prompt Listener
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            setDeferredPrompt(e);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+
+        // Show the install prompt
+        deferredPrompt.prompt();
+
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+
+        // We've used the prompt, and can't use it again, throw it away
+        setDeferredPrompt(null);
+    };
 
     // Get dynamic theme colors
     const primaryStart = themeSettings?.primary_start || '#6366f1';
@@ -183,6 +214,17 @@ export default function Header({ onMenuClick }) {
 
                     {/* Right Section - Actions */}
                     <div className="flex items-center space-x-3 flex-1 justify-end">
+                        {/* Install App Button */}
+                        {deferredPrompt && (
+                            <button
+                                onClick={handleInstallClick}
+                                className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-all duration-200 text-sm font-medium"
+                            >
+                                <ArrowDownTrayIcon className="w-4 h-4" />
+                                <span>Install App</span>
+                            </button>
+                        )}
+
                         {/* Time Display */}
                         <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-gray-50 to-indigo-50 rounded-lg border border-gray-200/50">
                             <ClockIcon className="w-4 h-4 text-gray-500" />
@@ -266,6 +308,21 @@ export default function Header({ onMenuClick }) {
 
                                     {/* Menu Items */}
                                     <div className="py-1">
+                                        {deferredPrompt && (
+                                            <Menu.Item>
+                                                {({ active }) => (
+                                                    <button
+                                                        onClick={handleInstallClick}
+                                                        className={`${active ? 'bg-gray-50 text-indigo-600' : 'text-gray-700'
+                                                            } group flex items-center w-full px-4 py-2 text-sm transition-colors duration-200 md:hidden`}
+                                                    >
+                                                        <ArrowDownTrayIcon className="mr-3 h-4 w-4" />
+                                                        Install App
+                                                    </button>
+                                                )}
+                                            </Menu.Item>
+                                        )}
+
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <Link

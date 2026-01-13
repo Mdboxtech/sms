@@ -61,7 +61,7 @@ export default function DataTable({
     // Filter columns for mobile display (exclude actions and very long content)
     const mobileColumns = columns.filter(col =>
         col.accessor !== 'actions' &&
-        col.header?.toLowerCase() !== 'actions'
+        (typeof col.header === 'string' ? col.header.toLowerCase() : '') !== 'actions'
     ).slice(0, 4); // Show max 4 fields on mobile cards
 
     return (
@@ -138,9 +138,9 @@ export default function DataTable({
                                         {getMobileTitle(row)}
                                     </div>
                                     {/* Actions column if exists */}
-                                    {columns.find(col => col.accessor === 'actions' || col.header?.toLowerCase() === 'actions') && (
+                                    {columns.find(col => col.accessor === 'actions' || (typeof col.header === 'string' ? col.header.toLowerCase() : '') === 'actions') && (
                                         <div className="flex-shrink-0 ml-2">
-                                            {columns.find(col => col.accessor === 'actions' || col.header?.toLowerCase() === 'actions').render(row)}
+                                            {columns.find(col => col.accessor === 'actions' || (typeof col.header === 'string' ? col.header.toLowerCase() : '') === 'actions').render(row)}
                                         </div>
                                     )}
                                 </div>
