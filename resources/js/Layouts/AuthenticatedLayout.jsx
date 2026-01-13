@@ -22,14 +22,14 @@ export default function AuthenticatedLayout({ children }) {
 
     return (
         <AppWrapper>
-            <div className="flex h-screen bg-gray-100">
+            <div className="flex h-screen bg-gray-100 overflow-hidden">
                 <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-                <div className="flex-1 flex flex-col overflow-hidden md:ml-0">
+                <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                     <Header onMenuClick={() => setSidebarOpen(true)} />
 
-                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                        <div className="max-w-7xl mx-auto">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
+                        <div className="max-w-7xl mx-auto w-full">
                             {children}
                         </div>
                     </main>
@@ -38,3 +38,4 @@ export default function AuthenticatedLayout({ children }) {
         </AppWrapper>
     );
 }
+

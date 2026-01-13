@@ -528,7 +528,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <div
                 className={`
                     flex flex-col h-screen bg-white border-r border-gray-200/50 shadow-xl transition-all duration-300 ease-in-out relative overflow-auto
-                    ${isOpen ? 'w-72' : 'w-20'}
+                    ${isOpen ? 'w-72' : 'w-0 md:w-20'}
                     fixed md:relative z-50 md:z-0
                     ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
                 `}

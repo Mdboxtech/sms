@@ -130,12 +130,12 @@ export default function Header({ onMenuClick }) {
                             <Bars3Icon className="w-6 h-6 text-gray-600" />
                         </button>
 
-                        {/* Page Title */}
-                        <div className="flex flex-col">
+                        {/* Page Title - Hidden on mobile */}
+                        <div className="hidden md:flex flex-col">
                             <h1 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight truncate">
                                 {title}
                             </h1>
-                            {/* Breadcrumbs - Hidden on small screens */}
+                            {/* Breadcrumbs */}
                             <nav className="hidden sm:flex items-center space-x-1 text-sm">
                                 {breadcrumbs.map((crumb, index) => (
                                     <div key={crumb.name} className="flex items-center">

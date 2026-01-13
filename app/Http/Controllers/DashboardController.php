@@ -35,16 +35,43 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', $data);
     }
 
+    /**
+     * Get current term (helper method)
+     */
+    private function getCurrentTerm()
+    {
+        $currentSession = \App\Models\AcademicSession::where('is_current', true)->first();
+        if (!$currentSession) {
+            return null;
+        }
+        return \App\Models\Term::where('academic_session_id', $currentSession->id)
+            ->where('is_current', true)
+            ->first();
+    }
+
     private function getAdminMetrics()
     {
+        $currentTerm = $this->getCurrentTerm();
+        
+        // Build query for current term results
+        $recentResultsQuery = Result::with(['student.user', 'subject', 'term.academicSession']);
+        $latestActivitiesQuery = Result::with(['student.user', 'subject']);
+        
+        if ($currentTerm) {
+            $recentResultsQuery->where('term_id', $currentTerm->id);
+            $latestActivitiesQuery->where('term_id', $currentTerm->id);
+        }
+        
         return [
             'metrics' => [
                 'total_students' => Student::count(),
                 'total_classes' => Classroom::count(),
                 'total_subjects' => Subject::count(),
-                'total_results' => Result::count(),
+                'total_results' => $currentTerm 
+                    ? Result::where('term_id', $currentTerm->id)->count() 
+                    : Result::count(),
             ],
-            'recent_results' => Result::with(['student.user', 'subject', 'term.academicSession'])
+            'recent_results' => $recentResultsQuery
                 ->latest()
                 ->take(5)
                 ->get(),
@@ -54,7 +81,7 @@ class DashboardController extends Controller
                     'name' => $class->name,
                     'student_count' => $class->students_count
                 ]),
-            'latest_activities' => Result::with(['student.user', 'subject'])
+            'latest_activities' => $latestActivitiesQuery
                 ->latest()
                 ->take(10)
                 ->get()
@@ -62,7 +89,9 @@ class DashboardController extends Controller
                     'type' => 'result_added',
                     'message' => "Result added for {$result->student->user->name} in {$result->subject->name}",
                     'date' => $result->created_at
-                ])
+                ]),
+            'current_term' => $currentTerm?->name ?? 'Not Set',
+            'current_session' => $currentTerm?->academicSession?->name ?? 'Not Set'
         ];
     }
 
@@ -97,23 +126,34 @@ class DashboardController extends Controller
                 ->values()
             : collect();
         
+        $currentTerm = $this->getCurrentTerm();
+        
+        // Build query for pending and recent results - filter by current term
+        $pendingResultsQuery = Result::whereIn('subject_id', $teacherSubjects->pluck('id'))
+            ->whereNull('total_score');
+        $recentResultsQuery = Result::whereIn('subject_id', $teacherSubjects->pluck('id'))
+            ->with(['student.user', 'subject', 'term.academicSession']);
+        
+        if ($currentTerm) {
+            $pendingResultsQuery->where('term_id', $currentTerm->id);
+            $recentResultsQuery->where('term_id', $currentTerm->id);
+        }
+        
         return [
             'metrics' => [
                 'my_subjects' => $teacherSubjects->count(),
                 'my_classes' => $teacherClasses->count(),
-                'pending_results' => Result::whereIn('subject_id', $teacherSubjects->pluck('id'))
-                    ->whereNull('total_score')
-                    ->count(),
+                'pending_results' => $pendingResultsQuery->count(),
                 'total_students' => Student::whereIn('classroom_id', $teacherClasses->pluck('id'))
                     ->count()
             ],
-            'recent_results' => Result::whereIn('subject_id', $teacherSubjects->pluck('id'))
-                ->with(['student.user', 'subject', 'term.academicSession'])
+            'recent_results' => $recentResultsQuery
                 ->latest()
                 ->take(5)
                 ->get(),
             'my_classes' => $teacherClasses,
-            'my_subjects' => $teacherSubjects
+            'my_subjects' => $teacherSubjects,
+            'current_term' => $currentTerm?->name ?? 'Not Set'
         ];
     }
 
@@ -158,13 +198,8 @@ class DashboardController extends Controller
                 'current_term' => $currentTerm?->name ?? 'Not Set',
                 'current_session' => $currentSession?->name ?? 'Not Set'
             ],
-            'current_results' => $currentResults,
-            'result_history' => Result::where('student_id', $student->id)
-                ->with(['subject', 'term.academicSession'])
-                ->latest()
-                ->take(10)
-                ->get()
-                ->groupBy('term.name')
+            'current_results' => $currentResults
+            // result_history removed - each term is a fresh start
         ];
     }
 

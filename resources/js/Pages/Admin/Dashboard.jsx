@@ -1,15 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
-import { 
-    UsersIcon, 
-    AcademicCapIcon, 
-    BookOpenIcon, 
+import {
+    UsersIcon,
+    AcademicCapIcon,
+    BookOpenIcon,
     ChartBarIcon,
     ClockIcon,
     UserGroupIcon
 } from '@heroicons/react/24/outline';
 
-export default function AdminDashboard({ auth, metrics, recent_results, class_distribution, latest_activities }) {
+export default function AdminDashboard({ auth, metrics, recent_results, class_distribution, latest_activities, current_term, current_session }) {
     return (
         <AuthenticatedLayout>
             <Head title="Admin Dashboard - SMS" />
@@ -18,6 +18,11 @@ export default function AdminDashboard({ auth, metrics, recent_results, class_di
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                         <p className="text-gray-600">Welcome back, {auth.user.name}</p>
+                        {current_term && current_term !== 'Not Set' && (
+                            <p className="text-sm text-indigo-600 mt-1">
+                                Current Term: {current_term} {current_session && current_session !== 'Not Set' ? `(${current_session})` : ''}
+                            </p>
+                        )}
                     </div>
 
                     {/* Metrics Cards */}
@@ -71,7 +76,7 @@ export default function AdminDashboard({ auth, metrics, recent_results, class_di
                                         <ChartBarIcon className="h-8 w-8 text-orange-600" />
                                     </div>
                                     <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-500">Total Results</p>
+                                        <p className="text-sm font-medium text-gray-500">Term Results</p>
                                         <p className="text-2xl font-semibold text-gray-900">{metrics.total_results}</p>
                                     </div>
                                 </div>
@@ -83,10 +88,13 @@ export default function AdminDashboard({ auth, metrics, recent_results, class_di
                         {/* Recent Results */}
                         <div className="bg-white overflow-hidden shadow-sm rounded-lg">
                             <div className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Results</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                    Recent Results
+                                    <span className="ml-2 text-sm font-normal text-gray-500">(Current Term)</span>
+                                </h3>
                                 <div className="space-y-4">
                                     {recent_results.length === 0 ? (
-                                        <p className="text-gray-500">No recent results</p>
+                                        <p className="text-gray-500">No recent results for current term</p>
                                     ) : (
                                         recent_results.map((result) => (
                                             <div key={result.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -131,10 +139,13 @@ export default function AdminDashboard({ auth, metrics, recent_results, class_di
                     {/* Latest Activities */}
                     <div className="mt-8 bg-white overflow-hidden shadow-sm rounded-lg">
                         <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Activities</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                Latest Activities
+                                <span className="ml-2 text-sm font-normal text-gray-500">(Current Term)</span>
+                            </h3>
                             <div className="space-y-3">
                                 {latest_activities.length === 0 ? (
-                                    <p className="text-gray-500">No recent activities</p>
+                                    <p className="text-gray-500">No recent activities for current term</p>
                                 ) : (
                                     latest_activities.map((activity, index) => (
                                         <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">

@@ -1,15 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    GraduationCap, 
-    BookOpen, 
+import {
+    GraduationCap,
+    BookOpen,
     BarChart3,
     FileText,
     User,
     Calendar
 } from 'lucide-react';
 
-export default function StudentDashboard({ auth, student_info, current_results, result_history }) {
+export default function StudentDashboard({ auth, student_info, current_results }) {
     return (
         <AuthenticatedLayout>
             <Head title="Student Dashboard - SMS" />
@@ -128,7 +128,7 @@ export default function StudentDashboard({ auth, student_info, current_results, 
                                             <p className="text-sm text-blue-700">Check all your academic results</p>
                                         </div>
                                     </Link>
-                                    
+
                                     <Link
                                         href={route('student.results.progress')}
                                         className="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
@@ -140,32 +140,6 @@ export default function StudentDashboard({ auth, student_info, current_results, 
                                         </div>
                                     </Link>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Result History */}
-                    <div className="mt-8 bg-white overflow-hidden shadow-sm rounded-lg">
-                        <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Result History</h3>
-                            <div className="space-y-6">
-                                {Object.keys(result_history).length === 0 ? (
-                                    <p className="text-gray-500">No result history available</p>
-                                ) : (
-                                    Object.entries(result_history).map(([termName, results]) => (
-                                        <div key={termName} className="border rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-900 mb-3">{termName}</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                {results.map((result) => (
-                                                    <div key={result.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                                        <span className="text-sm font-medium text-gray-900">{result.subject.name}</span>
-                                                        <span className="text-sm font-semibold text-gray-900">{result.total_score}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
                             </div>
                         </div>
                     </div>

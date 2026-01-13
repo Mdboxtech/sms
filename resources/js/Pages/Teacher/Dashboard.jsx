@@ -1,9 +1,9 @@
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Card, PageHeader } from '@/Components/UI';
-import { 
-    BookOpenIcon, 
-    UserGroupIcon, 
+import {
+    BookOpenIcon,
+    UserGroupIcon,
     ChartBarIcon,
     AcademicCapIcon,
     CalendarIcon,
@@ -12,7 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Link } from '@inertiajs/react';
 
-export default function Dashboard({ auth, metrics, recent_results, my_classes, my_subjects }) {
+export default function Dashboard({ auth, metrics, recent_results, my_classes, my_subjects, current_term }) {
     const quickActions = [
         {
             name: 'Mark Attendance',
@@ -55,11 +55,11 @@ export default function Dashboard({ auth, metrics, recent_results, my_classes, m
     return (
         <AuthenticatedLayout>
             <Head title="Teacher Dashboard - SMS" />
-            
+
             <div className="space-y-6">
-                <PageHeader 
+                <PageHeader
                     title={`Welcome back, ${auth.user.name}!`}
-                    subtitle="Manage your classes and students"
+                    subtitle={`Manage your classes and students${current_term && current_term !== 'Not Set' ? ` - ${current_term}` : ''}`}
                 />
 
                 {/* Metrics Cards */}
@@ -182,8 +182,11 @@ export default function Dashboard({ auth, metrics, recent_results, my_classes, m
                 {/* Recent Results */}
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium text-gray-900">Recent Results</h3>
-                        <Link 
+                        <h3 className="text-lg font-medium text-gray-900">
+                            Recent Results
+                            <span className="ml-2 text-sm font-normal text-gray-500">(Current Term)</span>
+                        </h3>
+                        <Link
                             href={route('teacher.results.index')}
                             className="text-sm text-indigo-600 hover:text-indigo-500"
                         >
@@ -228,13 +231,12 @@ export default function Dashboard({ auth, metrics, recent_results, my_classes, m
                                                 {result.total_score}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                    result.grade === 'A' ? 'bg-green-100 text-green-800' :
-                                                    result.grade === 'B' ? 'bg-blue-100 text-blue-800' :
-                                                    result.grade === 'C' ? 'bg-yellow-100 text-yellow-800' :
-                                                    result.grade === 'D' ? 'bg-orange-100 text-orange-800' :
-                                                    'bg-red-100 text-red-800'
-                                                }`}>
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${result.grade === 'A' ? 'bg-green-100 text-green-800' :
+                                                        result.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                                                            result.grade === 'C' ? 'bg-yellow-100 text-yellow-800' :
+                                                                result.grade === 'D' ? 'bg-orange-100 text-orange-800' :
+                                                                    'bg-red-100 text-red-800'
+                                                    }`}>
                                                     {result.grade}
                                                 </span>
                                             </td>

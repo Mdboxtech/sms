@@ -42,6 +42,15 @@ class ResultController extends Controller
                 ->with('error', 'Teacher profile not found.');
         }
 
+        // Get current term for default filtering
+        $currentSession = \App\Models\AcademicSession::where('is_current', true)->first();
+        $currentTerm = null;
+        if ($currentSession) {
+            $currentTerm = Term::where('academic_session_id', $currentSession->id)
+                ->where('is_current', true)
+                ->first();
+        }
+
         // Get all manageable subjects for all assigned classrooms
         $manageableSubjects = collect();
         $teacherClassrooms = $this->classTeacherService->getTeacherClassrooms($teacher->id);
@@ -76,6 +85,14 @@ class ResultController extends Controller
             }
         });
         
+        // Default to current term if no term filter is specified
+        $termIdFilter = $request->term_id;
+        $showAllTerms = $request->boolean('show_all_terms', false);
+        
+        if (!$showAllTerms && !$termIdFilter && $currentTerm) {
+            $termIdFilter = $currentTerm->id;
+        }
+        
         $query->with(['student.user', 'student.classroom', 'subject', 'term.academicSession'])
             ->when($request->subject_id, function ($query, $subject_id) {
                 return $query->where('subject_id', $subject_id);
@@ -85,7 +102,7 @@ class ResultController extends Controller
                     $q->where('classroom_id', $classroom_id);
                 });
             })
-            ->when($request->term_id, function ($query, $term_id) {
+            ->when($termIdFilter, function ($query, $term_id) {
                 return $query->where('term_id', $term_id);
             })
             ->latest();
@@ -95,7 +112,13 @@ class ResultController extends Controller
             'subjects' => $manageableSubjects,
             'classrooms' => $teacherClassrooms,
             'terms' => Term::with('academicSession')->get(),
-            'filters' => $request->only(['subject_id', 'classroom_id', 'term_id'])
+            'current_term' => $currentTerm,
+            'filters' => [
+                'subject_id' => $request->subject_id,
+                'classroom_id' => $request->classroom_id,
+                'term_id' => $termIdFilter,
+                'show_all_terms' => $showAllTerms,
+            ]
         ]);
     }
 

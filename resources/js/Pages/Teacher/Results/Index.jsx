@@ -18,13 +18,14 @@ import {
 } from '@heroicons/react/24/outline';
 import Dropdown from '@/Components/Dropdown';
 
-export default function Index({ results, subjects, classrooms, terms, filters }) {
+export default function Index({ results, subjects, classrooms, terms, filters, current_term }) {
     const [showFilters, setShowFilters] = useState(false);
 
     const { data, setData, get, processing } = useForm({
         subject_id: filters?.subject_id || '',
         classroom_id: filters?.classroom_id || '',
         term_id: filters?.term_id || '',
+        show_all_terms: filters?.show_all_terms || false,
     });
 
     // Create a memoized debounced function
@@ -41,6 +42,17 @@ export default function Index({ results, subjects, classrooms, terms, filters })
         debouncedApplyFilters();
     };
 
+    const toggleShowAllTerms = () => {
+        const newShowAll = !data.show_all_terms;
+        setData({
+            ...data,
+            show_all_terms: newShowAll,
+            term_id: newShowAll ? '' : (current_term?.id || ''),
+        });
+        // Apply filters after state update
+        setTimeout(() => applyFilters(), 100);
+    };
+
     const applyFilters = (e) => {
         e?.preventDefault();
         router.get(route('teacher.results.index'), data, {
@@ -53,7 +65,8 @@ export default function Index({ results, subjects, classrooms, terms, filters })
         setData({
             subject_id: '',
             classroom_id: '',
-            term_id: '',
+            term_id: current_term?.id || '',
+            show_all_terms: false,
         });
         get(route('teacher.results.index'));
     };
@@ -159,9 +172,18 @@ export default function Index({ results, subjects, classrooms, terms, filters })
             <div className="space-y-6">
                 <PageHeader
                     title="My Results"
-                    subtitle={`Manage results for subjects you teach. Total: ${results.data.length} results`}
+                    subtitle={`${data.show_all_terms ? 'Showing all terms' : `Current Term${current_term ? `: ${current_term.name}` : ''}`}. Total: ${results.data.length} results`}
                     actions={
                         <div className="flex space-x-3">
+                            <button
+                                onClick={toggleShowAllTerms}
+                                className={`inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium transition-colors ${data.show_all_terms
+                                        ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {data.show_all_terms ? 'Current Term Only' : 'Show All Terms'}
+                            </button>
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
                                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
