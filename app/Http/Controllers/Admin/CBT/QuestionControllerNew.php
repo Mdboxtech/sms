@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
 
-class QuestionController extends Controller
+class QuestionControllerNew extends Controller
 {
     protected $cbtService;
 
