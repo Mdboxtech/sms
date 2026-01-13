@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Result;
 use App\Models\Student;
 use App\Models\Term;
+use App\Models\Attendance;
 use App\Services\ReportCardService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -106,7 +107,10 @@ class ReportCardController extends Controller
             'class_average' => round($results->avg('total_score'), 1),
             'position' => $termResult->position,
             'teacher_comment' => $termResult->teacher_comment ?: $this->generateTeacherComment($termResult->average_score),
-            'principal_comment' => $termResult->principal_comment ?: $this->generatePrincipalComment($termResult->average_score)
+            'principal_comment' => $termResult->principal_comment ?: $this->generatePrincipalComment($termResult->average_score),
+            'attendance' => $this->calculateAttendance($student->id, $term->id),
+            'grading_scale' => $this->getGradingScale(),
+            'class_statistics' => $this->getClassStatistics($term->id, $student->classroom_id)
         ];
 
         return Inertia::render('ReportCards/Show', [
@@ -227,16 +231,30 @@ class ReportCardController extends Controller
      */
     protected function calculateAttendance($studentId, $termId)
     {
-        // This is a placeholder implementation
-        // You can replace this with actual attendance calculation logic
-        // when you implement the attendance module
+        // Get real attendance data from the Attendance model
+        $summary = Attendance::getAttendanceSummary($studentId, $termId);
         
-        // For now, we'll return a reasonable default
+        // If no attendance records exist, return reasonable defaults
+        if ($summary['total_days'] === 0) {
+            return [
+                'attendance_percentage' => null,
+                'days_present' => 0,
+                'days_absent' => 0,
+                'days_late' => 0,
+                'days_excused' => 0,
+                'total_days' => 0,
+                'has_attendance_data' => false
+            ];
+        }
+        
         return [
-            'attendance_percentage' => 95, // Default to 95%
-            'days_present' => 190,
-            'days_absent' => 10,
-            'total_days' => 200
+            'attendance_percentage' => $summary['attendance_percentage'],
+            'days_present' => $summary['days_present'],
+            'days_absent' => $summary['days_absent'],
+            'days_late' => $summary['days_late'],
+            'days_excused' => $summary['days_excused'],
+            'total_days' => $summary['total_days'],
+            'has_attendance_data' => true
         ];
     }
 

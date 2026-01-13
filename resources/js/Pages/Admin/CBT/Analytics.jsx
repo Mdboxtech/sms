@@ -1,7 +1,7 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Card from '@/Components/ui/Card';
+import Card from '@/Components/UI/Card';
 import { BarChart3, FileText, HelpCircle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 
 export default function Analytics({ auth, analytics }) {
@@ -43,8 +43,8 @@ export default function Analytics({ auth, analytics }) {
                             </span>
                             <div className="flex-1 mx-3">
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                        className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                                         style={{ width: `${percentage}%` }}
                                     ></div>
                                 </div>
@@ -77,51 +77,51 @@ export default function Analytics({ auth, analytics }) {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Overview Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <StatCard 
-                            title="Total Exams" 
-                            value={overview.totalExams} 
-                            icon={FileText} 
-                            color="blue" 
+                        <StatCard
+                            title="Total Exams"
+                            value={overview.totalExams}
+                            icon={FileText}
+                            color="blue"
                         />
-                        <StatCard 
-                            title="Total Questions" 
-                            value={overview.totalQuestions} 
-                            icon={HelpCircle} 
-                            color="green" 
+                        <StatCard
+                            title="Total Questions"
+                            value={overview.totalQuestions}
+                            icon={HelpCircle}
+                            color="green"
                         />
-                        <StatCard 
-                            title="Active Exams" 
-                            value={overview.activeExams} 
-                            icon={Clock} 
-                            color="yellow" 
+                        <StatCard
+                            title="Active Exams"
+                            value={overview.activeExams}
+                            icon={Clock}
+                            color="yellow"
                         />
-                        <StatCard 
-                            title="Completed Exams" 
-                            value={overview.completedExams} 
-                            icon={CheckCircle} 
-                            color="purple" 
+                        <StatCard
+                            title="Completed Exams"
+                            value={overview.completedExams}
+                            icon={CheckCircle}
+                            color="purple"
                         />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         {/* Exams by Subject */}
-                        <ChartCard 
-                            title="Exams by Subject" 
-                            data={examsBySubject} 
+                        <ChartCard
+                            title="Exams by Subject"
+                            data={examsBySubject}
                         />
 
                         {/* Questions by Difficulty */}
-                        <ChartCard 
-                            title="Questions by Difficulty" 
-                            data={questionsByDifficulty} 
+                        <ChartCard
+                            title="Questions by Difficulty"
+                            data={questionsByDifficulty}
                         />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Questions by Type */}
-                        <ChartCard 
-                            title="Questions by Type" 
-                            data={questionsByType} 
+                        <ChartCard
+                            title="Questions by Type"
+                            data={questionsByType}
                         />
 
                         {/* Recent Exams */}
@@ -141,11 +141,10 @@ export default function Analytics({ auth, analytics }) {
                                                 <p className="text-sm text-gray-500">
                                                     {new Date(exam.created_at).toLocaleDateString()}
                                                 </p>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    exam.is_active 
-                                                        ? 'bg-green-100 text-green-800' 
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${exam.is_active
+                                                        ? 'bg-green-100 text-green-800'
                                                         : 'bg-gray-100 text-gray-800'
-                                                }`}>
+                                                    }`}>
                                                     {exam.is_active ? 'Active' : 'Inactive'}
                                                 </span>
                                             </div>
@@ -168,7 +167,7 @@ export default function Analytics({ auth, analytics }) {
                             <div className="p-4 bg-blue-50 rounded-lg">
                                 <h4 className="font-medium text-blue-900">Question Bank Health</h4>
                                 <p className="text-sm text-blue-700 mt-1">
-                                    You have {overview.totalQuestions} questions across all subjects. 
+                                    You have {overview.totalQuestions} questions across all subjects.
                                     {overview.totalQuestions < 50 && " Consider adding more questions for better exam variety."}
                                 </p>
                             </div>
@@ -182,7 +181,7 @@ export default function Analytics({ auth, analytics }) {
                             <div className="p-4 bg-purple-50 rounded-lg">
                                 <h4 className="font-medium text-purple-900">Completion Rate</h4>
                                 <p className="text-sm text-purple-700 mt-1">
-                                    {overview.totalExams > 0 
+                                    {overview.totalExams > 0
                                         ? `${((overview.completedExams / overview.totalExams) * 100).toFixed(0)}% of exams have been completed.`
                                         : "No exam completion data yet."
                                     }

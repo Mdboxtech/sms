@@ -374,7 +374,7 @@ export default function Settings({
                                         <InputError message={generalErrors.school_tagline} className="mt-2" />
                                     </div>
 
-                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                    {/* <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                         <div>
                                             <InputLabel htmlFor="school_primary_color" value="Primary Color" />
                                             <div className="flex items-center space-x-3">
@@ -418,7 +418,7 @@ export default function Settings({
                                             </div>
                                             <InputError message={generalErrors.school_secondary_color} className="mt-2" />
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     <div className="flex justify-end">
                                         <Button
