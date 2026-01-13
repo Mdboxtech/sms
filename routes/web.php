@@ -174,19 +174,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Settings Management
         Route::prefix('settings')->name('settings.')->group(function () {
+            // Settings
             Route::get('/', [SettingsController::class, 'index'])->name('index');
             Route::post('/general', [SettingsController::class, 'updateGeneral'])->name('update.general');
             Route::post('/academic', [SettingsController::class, 'updateAcademic'])->name('update.academic');
             Route::post('/system', [SettingsController::class, 'updateSystem'])->name('update.system');
             Route::post('/theme', [SettingsController::class, 'updateTheme'])->name('update.theme');
+            Route::post('/report-card', [SettingsController::class, 'updateReportCard'])->name('update.report-card');
             Route::post('/logo', [SettingsController::class, 'uploadLogo'])->name('upload.logo');
-            Route::post('/backup', [SettingsController::class, 'backup'])->name('backup');
-            Route::post('/clear-cache', [SettingsController::class, 'clearCache'])->name('clear.cache');
-            Route::post('/optimize', [SettingsController::class, 'optimizeSystem'])->name('optimize');
-            Route::post('/reset-corrupted', [SettingsController::class, 'resetCorruptedSettings'])->name('reset.corrupted');
             Route::post('/active-session', [SettingsController::class, 'setActiveSession'])->name('active.session');
             Route::post('/active-term', [SettingsController::class, 'setActiveTerm'])->name('active.term');
-            Route::post('/report-card', [SettingsController::class, 'updateReportCard'])->name('update.report-card');
+            Route::post('/backup', [SettingsController::class, 'backup'])->name('backup');
+            Route::post('/restore', [SettingsController::class, 'restore'])->name('restore'); // Added restore route
+            Route::post('/clear-cache', [SettingsController::class, 'clearCache'])->name('clear.cache');
+            Route::post('/optimize', [SettingsController::class, 'optimizeSystem'])->name('optimize');
+            Route::post('/reset-corrupted', [SettingsController::class, 'resetCorruptedSettings'])->name('reset.corrupted'); // Kept existing route
+
+            // ID Cards
+            Route::prefix('id-cards')->name('id-cards.')->group(function () {
+                Route::get('/', [IdCardController::class, 'index'])->name('index');
+                Route::post('/template', [IdCardController::class, 'saveTemplate'])->name('save-template');
+                Route::get('/users', [IdCardController::class, 'getUsers'])->name('users');
+            });
             
             // Payment Settings
             Route::get('/payment', [SettingsController::class, 'paymentSettings'])->name('payment');

@@ -161,6 +161,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 children: [
                     { name: 'Students', href: route('admin.students.index'), routeName: 'admin.students.index', icon: Users },
                     { name: 'Teachers', href: route('admin.teachers.index'), routeName: 'admin.teachers.index', icon: UserCheck },
+                    { name: 'ID Cards', href: route('admin.id-cards.index'), routeName: 'admin.id-cards.index', icon: User },
                 ]
             },
             {
