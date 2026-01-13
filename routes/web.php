@@ -19,6 +19,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\TermResultController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\IdCardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\Teacher\ResultController as TeacherResultController;
