@@ -39,4 +39,12 @@ return [
         'api_key' => env('OPENAI_API_KEY'),
     ],
 
+    'paystack' => [
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'webhook_url' => env('PAYSTACK_WEBHOOK_URL'),
+        'enabled' => env('PAYSTACK_ENABLED', false),
+        'callback_url' => env('APP_URL') . '/payment/callback',
+    ],
+
 ];

@@ -95,5 +95,8 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         }
+
+        // Seed fees after academic session and terms are created
+        $this->call(FeeSeeder::class);
     }
 }

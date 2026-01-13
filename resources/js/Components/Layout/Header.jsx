@@ -3,6 +3,7 @@ import { usePage, router, Link } from '@inertiajs/react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import NotificationIndicator from '@/Components/NotificationIndicator';
+import { useTheme } from '@/Components/ThemeProvider';
 import {
     UserCircleIcon,
     MagnifyingGlassIcon,
@@ -23,24 +24,32 @@ import {
 
 export default function Header() {
     const { auth, appSettings, themeSettings } = usePage().props;
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { isDarkMode, toggleDarkMode } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearch, setShowSearch] = useState(false);
 
     // Get dynamic theme colors
-    const primaryGradient = `linear-gradient(135deg, ${themeSettings?.primary_start || '#6366f1'}, ${themeSettings?.primary_end || '#8b5cf6'})`;
+    const primaryStart = themeSettings?.primary_start || '#6366f1';
+    const primaryEnd = themeSettings?.primary_end || '#8b5cf6';
+    const primaryGradient = `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})`;
     const headerStyle = themeSettings?.header_style || 'glass';
-    
+
     // Get header background based on style
     const getHeaderBackground = () => {
+        if (isDarkMode) {
+            return {
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                backdropFilter: 'blur(16px)'
+            };
+        }
         switch (headerStyle) {
             case 'gradient':
                 return { background: primaryGradient };
             case 'solid':
-                return { backgroundColor: themeSettings?.primary_start || '#6366f1' };
+                return { backgroundColor: primaryStart };
             case 'glass':
             default:
-                return { 
+                return {
                     backgroundColor: 'rgba(255, 255, 255, 0.8)',
                     backdropFilter: 'blur(16px)'
                 };
@@ -52,16 +61,11 @@ export default function Header() {
         router.post(route('logout'));
     };
 
-    const toggleDarkMode = () => {
-        setIsDarkMode(!isDarkMode);
-        // Here you could implement actual dark mode functionality
-    };
-
     // Get current page title and breadcrumbs
     const getCurrentPageInfo = () => {
         const currentRoute = route().current();
         const routeParts = currentRoute ? currentRoute.split('.') : [];
-        
+
         let title = 'Dashboard';
         let breadcrumbs = [{ name: 'Home', href: route('admin.dashboard'), icon: HomeIcon }];
 
@@ -97,17 +101,17 @@ export default function Header() {
 
     // Get current time and date
     const [currentTime, setCurrentTime] = useState(new Date());
-    
+
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 1000);
-        
+
         return () => clearInterval(timer);
     }, []);
 
     return (
-        <header 
+        <header
             className="border-b border-gray-200/50 shadow-sm sticky top-0 z-40"
             style={getHeaderBackground()}
         >
@@ -256,39 +260,36 @@ export default function Header() {
                                             {({ active }) => (
                                                 <Link
                                                     href={route('profile.edit')}
-                                                    className={`${
-                                                        active ? 'bg-gray-50 text-indigo-600' : 'text-gray-700'
-                                                    } group flex items-center px-4 py-2 text-sm transition-colors duration-200`}
+                                                    className={`${active ? 'bg-gray-50 text-indigo-600' : 'text-gray-700'
+                                                        } group flex items-center px-4 py-2 text-sm transition-colors duration-200`}
                                                 >
                                                     <UserIcon className="mr-3 h-4 w-4" />
                                                     Profile Settings
                                                 </Link>
                                             )}
                                         </Menu.Item>
-                                        
+
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <Link
                                                     href={route('admin.settings.index')}
-                                                    className={`${
-                                                        active ? 'bg-gray-50 text-indigo-600' : 'text-gray-700'
-                                                    } group flex items-center px-4 py-2 text-sm transition-colors duration-200`}
+                                                    className={`${active ? 'bg-gray-50 text-indigo-600' : 'text-gray-700'
+                                                        } group flex items-center px-4 py-2 text-sm transition-colors duration-200`}
                                                 >
                                                     <Cog6ToothIcon className="mr-3 h-4 w-4" />
                                                     System Settings
                                                 </Link>
                                             )}
                                         </Menu.Item>
-                                        
+
                                         <div className="border-t border-gray-100 my-1"></div>
-                                        
+
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <button
                                                     onClick={handleLogout}
-                                                    className={`${
-                                                        active ? 'bg-red-50 text-red-600' : 'text-gray-700'
-                                                    } group flex items-center w-full px-4 py-2 text-sm transition-colors duration-200`}
+                                                    className={`${active ? 'bg-red-50 text-red-600' : 'text-gray-700'
+                                                        } group flex items-center w-full px-4 py-2 text-sm transition-colors duration-200`}
                                                 >
                                                     <ArrowRightOnRectangleIcon className="mr-3 h-4 w-4" />
                                                     Sign out

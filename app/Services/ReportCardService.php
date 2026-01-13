@@ -154,6 +154,53 @@ class ReportCardService
         // Calculate grading scale
         $gradingScale = $this->getGradingScale();
 
+        // Get settings individually (more reliable than getAllSettings)
+        $schoolName = \App\Models\Setting::getValue('school_name', config('app.name', 'Excellence Academy'));
+        $schoolAddress = \App\Models\Setting::getValue('school_address', 'School Address Here');
+        $schoolPhone = \App\Models\Setting::getValue('school_phone', '+234-XXX-XXX-XXXX');
+        $schoolEmail = \App\Models\Setting::getValue('school_email', 'info@school.edu.ng');
+        $schoolLogo = \App\Models\Setting::getValue('school_logo', null);
+        $schoolTagline = \App\Models\Setting::getValue('school_tagline', 'Excellence in Education');
+        $schoolPrimaryColor = \App\Models\Setting::getValue('school_primary_color', '#1e40af');
+        $schoolSecondaryColor = \App\Models\Setting::getValue('school_secondary_color', '#f59e0b');
+        
+        // Prepare school info
+        $schoolInfo = [
+            'name' => $schoolName,
+            'address' => $schoolAddress,
+            'phone' => $schoolPhone,
+            'email' => $schoolEmail,
+            'logo' => $schoolLogo,
+            'tagline' => $schoolTagline,
+            'contact_line' => \App\Models\Setting::getValue('school_contact_line', "Tel: {$schoolPhone} | Email: {$schoolEmail}")
+        ];
+
+        // Get app settings for styling with base64 logo
+        $appSettings = [
+            'school_name' => $schoolName,
+            'school_address' => $schoolAddress,
+            'school_phone' => $schoolPhone,
+            'school_email' => $schoolEmail,
+            'school_logo' => null, // Will be set below as base64
+            'school_tagline' => $schoolTagline,
+            'school_primary_color' => $schoolPrimaryColor,
+            'school_secondary_color' => $schoolSecondaryColor,
+        ];
+
+        // Convert logo to base64 for PDF compatibility
+        if (!empty($schoolLogo)) {
+            $logoPath = storage_path('app/public/' . $schoolLogo);
+            if (file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                $logoBase64 = base64_encode($logoData);
+                $mimeType = mime_content_type($logoPath);
+                $appSettings['school_logo'] = 'data:' . $mimeType . ';base64,' . $logoBase64;
+                $schoolInfo['logo'] = $appSettings['school_logo']; // Also update school_info
+            }
+        }
+
+        \Log::info('App Settings for Report Card: ' . json_encode($appSettings));
+
         // Prepare comprehensive data for PDF
         $data = [
             'student' => $student->load(['user', 'classroom']),
@@ -177,6 +224,8 @@ class ReportCardService
             'attendance' => $attendanceData,
             'comments' => $comments,
             'grading_scale' => $gradingScale,
+            'school_info' => $schoolInfo,
+            'app_settings' => $appSettings, // Add this for styling
             'generated_on' => now()->format('d/m/Y H:i'),
             'academic_session' => $term->academicSession
         ];

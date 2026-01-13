@@ -16,7 +16,22 @@
         }
         
         body {
-            font-family: Arial, sans-serif;
+            font-family: Ar        <!-- Professional Header with Logo -->
+        <div class="header">
+            <!-- Header Content with Logo centered above -->
+            <div class="header-content">
+                <!-- School Logo centered -->
+                <div class="school-logo" style="margin: 0 auto 10px auto;">
+                    @if(isset($app_settings['school_logo']) && !empty($app_settings['school_logo']))
+                        <img src="{{ $app_settings['school_logo'] }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    @else
+                        <span style="font-size: 20px;">🎓</span>
+                    @endif
+                </div>
+
+                <div class="school-name">{{ $school_info['name'] }}</div>
+                <div class="school-details">
+                    {{ $school_info['address'] }}</div>
             line-height: 1.2;
             color: #333;
             font-size: 9px;
@@ -39,69 +54,59 @@
         /* Professional Header with Logo */
         .header {
             background: linear-gradient(135deg, {{ $app_settings['school_primary_color'] ?? '#1e40af' }} 0%, {{ $app_settings['school_secondary_color'] ?? '#3b82f6' }} 100%);
-            color: white;
+            color: black;
             padding: 15px;
             text-align: center;
             margin-bottom: 10px;
             border-radius: 6px;
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
         }
         
         .school-logo {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: rgba(255,255,255,0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             flex-shrink: 0;
+            margin: 0 auto;
         }
         
         .header-content {
             text-align: center;
-            flex: 1;
+            color: black;
         }
         
         .school-name {
-            font-size: 20px;
-            font-weight: 900;
-            margin-bottom: 3px;
-            letter-spacing: 0.8px;
-            color: #ffffff;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            color: black
         }
         
         .school-details {
-            font-size: 9px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            line-height: 1.4;
-            color: #ffffff;
-            text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.2);
+            font-size: 8px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+            line-height: 1.3;
         }
         
         .report-title {
-            font-size: 16px;
-            font-weight: 800;
-            margin-bottom: 3px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: #ffffff;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
         }
         
         .session-info {
-            font-size: 12px;
-            font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.2);
+            font-size: 11px;
+            font-weight: 500;
         }
 
         /* Watermark */
@@ -354,25 +359,30 @@
         }
         
         .signatures {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
             margin-bottom: 5px;
+            width: 100%;
         }
         
         .signature-box {
             text-align: center;
+            flex: 1;
+            min-width: 0;
         }
         
         .signature-title {
             font-size: 6px;
             color: #64748b;
-            margin-bottom: 15px;
+            margin-top: 8px;
         }
         
         .signature-line {
             border-bottom: 1px solid #cbd5e0;
-            height: 15px;
+            height: 20px;
+            width: 100%;
         }
         
         .generated-info {
@@ -409,22 +419,26 @@
     <div class="report-container">
         <!-- Professional Header with Logo -->
         <div class="header">
-            <!-- School Logo -->
-            <div class="school-logo">
-                @if(isset($app_settings['school_logo']) && !empty($app_settings['school_logo']))
-                    <img src="{{ public_path('storage/' . $app_settings['school_logo']) }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                @else
-                    <span style="font-size: 16px;">🎓</span>
-                @endif
-            </div>
-            
-            <!-- Header Content -->
+            <!-- Header Content with Logo centered above -->
             <div class="header-content">
-                <div class="school-name">Excellence Academy</div>
+                <!-- School Logo centered -->
+                <div class="school-logo" style="margin: 0 auto 10px auto;">
+                    @if(isset($app_settings['school_logo']) && !empty($app_settings['school_logo']))
+                        <img src="{{ public_path('storage/' . $app_settings['school_logo']) }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    @else
+                        <span style="font-size: 20px;">🎓</span>
+                    @endif
+                </div>
+
+                <div class="school-name">{{ $school_info['name'] }}</div>
                 <div class="school-details">
-                    TESTINGINF
-                    <br>Tel: 0903289809398 | Email: EXAMPLE@GMAIL.COM
-                    <br><em>"Excellence in Education"</em>
+                    {{ $school_info['address'] }}
+                    @if($school_info['contact_line'])
+                        <br>{{ $school_info['contact_line'] }}
+                    @endif
+                    @if($school_info['tagline'])
+                        <br><em>"{{ $school_info['tagline'] }}"</em>
+                    @endif
                 </div>
                 <div class="report-title">Student Report Card</div>
                 <div class="session-info">{{ $academic_session->name }} - {{ $term->name }}</div>
@@ -434,7 +448,7 @@
         <!-- Logo Watermark -->
         <div class="watermark">
             @if(isset($app_settings['school_logo']) && !empty($app_settings['school_logo']))
-                <img src="{{ public_path('storage/' . $app_settings['school_logo']) }}" alt="Watermark" style="width: 150px; height: 150px; opacity: 0.03; object-fit: contain;">
+                <img src="{{ $app_settings['school_logo'] }}" alt="Watermark" style="width: 150px; height: 150px; opacity: 0.03; object-fit: contain;">
             @else
                 🎓
             @endif
@@ -486,10 +500,10 @@
                         <div style="color: #3b82f6; font-size: 14px; font-weight: bold; margin-bottom: 1px;">{{ $statistics['average_score'] }}%</div>
                         <div style="color: #64748b; font-size: 7px; text-transform: uppercase; font-weight: 500;">Average</div>
                     </td>
-                    <td style="text-align: center; padding: 6px; border: 1px solid #e2e8f0; background: white;">
+                    {{-- <td style="text-align: center; padding: 6px; border: 1px solid #e2e8f0; background: white;">
                         <div style="color: #3b82f6; font-size: 14px; font-weight: bold; margin-bottom: 1px;">{{ $statistics['gpa'] }}</div>
                         <div style="color: #64748b; font-size: 7px; text-transform: uppercase; font-weight: 500;">GPA</div>
-                    </td>
+                    </td> --}}
                     <td style="text-align: center; padding: 6px; border: 1px solid #e2e8f0; background: white;">
                         <div style="color: #3b82f6; font-size: 14px; font-weight: bold; margin-bottom: 1px;">{{ $attendance['attendance_percentage'] }}%</div>
                         <div style="color: #64748b; font-size: 7px; text-transform: uppercase; font-weight: 500;">Attendance</div>

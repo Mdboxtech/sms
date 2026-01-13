@@ -88,7 +88,8 @@ class ExamController extends Controller
             'duration_minutes' => 'required|integer|min:1',
             'passing_marks' => 'required|integer|min:0',
             'instructions' => 'nullable|string',
-            'start_time' => 'nullable|date|after:now',
+            'start_time' => 'nullable|date',
+            // 'start_time' => 'nullable|date|after:now',
             'end_time' => 'nullable|date|after:start_time',
             'is_active' => 'boolean',
             'is_published' => 'boolean',
@@ -338,6 +339,40 @@ class ExamController extends Controller
             return back()->with('success', 'Question removed from exam successfully');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to remove question: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Publish an exam
+     */
+    public function publish(Exam $exam)
+    {
+        try {
+            $exam->update([
+                'is_published' => true,
+                'status' => 'active'
+            ]);
+
+            return back()->with('success', 'Exam published successfully');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to publish exam: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Unpublish an exam
+     */
+    public function unpublish(Exam $exam)
+    {
+        try {
+            $exam->update([
+                'is_published' => false,
+                'status' => 'draft'
+            ]);
+
+            return back()->with('success', 'Exam unpublished successfully');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to unpublish exam: ' . $e->getMessage()]);
         }
     }
 

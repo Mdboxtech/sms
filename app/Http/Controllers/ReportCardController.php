@@ -185,81 +185,13 @@ class ReportCardController extends Controller
             'term_id' => 'required|exists:terms,id',
         ]);
 
-        $student = Student::with(['user', 'classroom.students'])->findOrFail($request->student_id);
+        $student = Student::with(['user', 'classroom'])->findOrFail($request->student_id);
         $term = Term::with('academicSession')->findOrFail($request->term_id);
         
-        $results = Result::where('student_id', $student->id)
-            ->where('term_id', $term->id)
-            ->with(['subject', 'teacher'])
-            ->get();
-
-        // Add grade information to each result
-        $results = $results->map(function($result) {
-            $result->grade_info = $this->reportCardService->calculateGrade($result->total_score);
-            return $result;
-        });
-
-        $classAverage = Result::where('term_id', $term->id)
-            ->whereHas('student', function($query) use ($student) {
-                $query->where('classroom_id', $student->classroom_id);
-            })
-            ->avg('total_score');
-
-        $position = $this->calculateStudentPosition($student->id, $term->id, $student->classroom_id);
-        $averageScore = $results->avg('total_score');
+        // Use the ReportCardService to generate the PDF with proper settings and logo
+        $pdf = $this->reportCardService->generateReportCard($student, $term);
         
-        // Count total students in the class
-        $totalStudents = Student::where('classroom_id', $student->classroom_id)->count();
-
-        // Calculate GPA (assuming 4.0 scale)
-        $gpa = $this->calculateGPA($averageScore);
-
-        // Calculate attendance (placeholder - you can implement actual attendance logic)
-        $attendanceData = $this->calculateAttendance($student->id, $term->id);
-
-        // Get grading scale
-        $gradingScale = $this->getGradingScale();
-
-        // Calculate class statistics
-        $classStatistics = $this->getClassStatistics($term->id, $student->classroom_id);
-
-        // Get comments
-        $comments = $this->getComments(null, $averageScore);
-
-        // Prepare statistics array for the template
-        $statistics = [
-            'position' => $position,
-            'total_students' => $totalStudents,
-            'total_subjects' => $results->count(),
-            'total_score' => $results->sum('total_score'),
-            'average_score' => round($averageScore, 1),
-            'class_average' => round($classAverage, 1),
-            'highest_score' => $results->max('total_score'),
-            'lowest_score' => $results->min('total_score'),
-            'gpa' => $gpa,
-        ];
-
-        $data = [
-            'student' => $student,
-            'term' => $term,
-            'academic_session' => $term->academicSession,
-            'results' => $results,
-            'statistics' => $statistics, // Add the statistics array
-            'attendance' => $attendanceData, // Add attendance data
-            'class_statistics' => $classStatistics,
-            'grading_scale' => $gradingScale,
-            'comments' => $comments,
-            'generated_on' => now()->format('d/m/Y H:i'),
-            'total_score' => $results->sum('total_score'),
-            'average_score' => round($averageScore, 1),
-            'class_average' => round($classAverage, 1),
-            'position' => $position,
-            'teacher_comment' => $this->generateTeacherComment($averageScore),
-            'principal_comment' => $this->generatePrincipalComment($averageScore),
-        ];
-
-        $pdf = Pdf::loadView('reports.report-card-optimized', $data);
-        
+        // Return the PDF as a download
         return $pdf->download("report-card-{$student->admission_number}-{$term->name}.pdf");
     }
 
@@ -268,128 +200,10 @@ class ReportCardController extends Controller
         $student = Student::with(['user', 'classroom'])->findOrFail($studentId);
         $term = Term::with('academicSession')->findOrFail($termId);
         
-        // Get all results for the student in this term
-        $results = Result::where('student_id', $student->id)
-            ->where('term_id', $term->id)
-            ->with(['subject', 'teacher'])
-            ->get();
-
-        if ($results->isEmpty()) {
-            return back()->withErrors(['error' => 'No results found for this student in the selected term.']);
-        }
-
-        // Add grade information to each result
-        $results = $results->map(function($result) {
-            $result->grade_info = $this->reportCardService->calculateGrade($result->total_score);
-            return $result;
-        });
-
-        // Get or calculate term result
-        $termResult = \App\Models\TermResult::where('student_id', $student->id)
-            ->where('term_id', $term->id)
-            ->first();
-
-        // Calculate basic statistics
-        $totalScore = $results->sum('total_score');
-        $averageScore = $results->avg('total_score');
+        // Use the ReportCardService to generate the PDF with proper settings
+        $pdf = $this->reportCardService->generateReportCard($student, $term);
         
-        // Calculate class statistics
-        $classAverage = Result::where('term_id', $term->id)
-            ->whereHas('student', function($query) use ($classroomId) {
-                $query->where('classroom_id', $classroomId);
-            })
-            ->avg('total_score');
-
-        // Calculate position
-        $position = $this->calculateStudentPosition($student->id, $term->id, $classroomId);
-        
-        // Count total students in the class
-        $totalStudents = Student::where('classroom_id', $classroomId)->count();
-
-        // Calculate GPA (assuming 4.0 scale)
-        $gpa = $this->calculateGPA($averageScore);
-
-        // Calculate attendance (placeholder - you can implement actual attendance logic)
-        $attendanceData = $this->calculateAttendance($student->id, $term->id);
-
-        // Get grading scale
-        $gradingScale = $this->getGradingScale();
-
-        // Calculate class statistics
-        $classStatistics = $this->getClassStatistics($term->id, $classroomId);
-
-        // Get comments
-        $comments = $this->getComments($termResult, $averageScore);
-
-        // Prepare statistics array for the template
-        $statistics = [
-            'position' => $position,
-            'total_students' => $totalStudents,
-            'total_subjects' => $results->count(),
-            'total_score' => $totalScore,
-            'average_score' => round($averageScore, 1),
-            'class_average' => round($classAverage, 1),
-            'highest_score' => $results->max('total_score'),
-            'lowest_score' => $results->min('total_score'),
-            'gpa' => $gpa,
-        ];
-
-        // Get app settings for header
-        $appSettings = [
-            'school_name' => config('app.school_name', 'School Management System'),
-            'school_address' => config('app.school_address', ''),
-            'school_phone' => config('app.school_phone', ''),
-            'school_email' => config('app.school_email', ''),
-            'school_logo' => config('app.school_logo', ''),
-            'school_tagline' => config('app.school_tagline', 'Nurturing Minds, Building Futures'),
-            'school_primary_color' => config('app.school_primary_color', '#2563eb'),
-            'school_secondary_color' => config('app.school_secondary_color', '#f59e0b'),
-        ];
-
-        // Debug: Log the settings to see what's being retrieved
-        \Log::info('App Settings for Report Card:', $appSettings);
-
-        // Pre-format school information for reliable PDF rendering
-        $schoolInfo = [
-            'name' => $appSettings['school_name'] ?? 'Excellence Academy',
-            'address' => $appSettings['school_address'] ?? '',
-            'contact_line' => '',
-            'tagline' => $appSettings['school_tagline'] ?? '',
-        ];
-
-        // Build contact line
-        $contactParts = [];
-        if (!empty($appSettings['school_phone'])) {
-            $contactParts[] = 'Tel: ' . $appSettings['school_phone'];
-        }
-        if (!empty($appSettings['school_email'])) {
-            $contactParts[] = 'Email: ' . $appSettings['school_email'];
-        }
-        $schoolInfo['contact_line'] = implode(' | ', $contactParts);
-
-        $data = [
-            'student' => $student,
-            'term' => $term,
-            'academic_session' => $term->academicSession, // Add the academic session
-            'app_settings' => $appSettings, // Add app settings
-            'school_info' => $schoolInfo, // Add pre-formatted school info
-            'results' => $results,
-            'statistics' => $statistics, // Add the statistics array
-            'attendance' => $attendanceData, // Add attendance data
-            'class_statistics' => $classStatistics,
-            'grading_scale' => $gradingScale,
-            'comments' => $comments,
-            'generated_on' => now()->format('d/m/Y H:i'),
-            'total_score' => $totalScore,
-            'average_score' => round($averageScore, 1),
-            'class_average' => round($classAverage, 1),
-            'position' => $position,
-            'teacher_comment' => $termResult?->teacher_comment ?: $this->generateTeacherComment($averageScore),
-            'principal_comment' => $termResult?->principal_comment ?: $this->generatePrincipalComment($averageScore),
-        ];
-
-        $pdf = Pdf::loadView('reports.report-card-optimized', $data);
-        
+        // Return the PDF as a download
         return $pdf->download("report-card-{$student->admission_number}-{$term->name}.pdf");
     }
 

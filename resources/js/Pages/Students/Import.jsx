@@ -9,12 +9,18 @@ import {
     ExclamationTriangleIcon,
     CheckCircleIcon,
     InformationCircleIcon,
-    UserGroupIcon
+    UserGroupIcon,
+    EyeIcon,
+    XMarkIcon
 } from '@heroicons/react/24/outline';
+import axios from 'axios';
 
-export default function ImportStudents({ auth, classrooms }) {
+export default function ImportStudents({ auth, classrooms, flash }) {
     const [dragActive, setDragActive] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [previewData, setPreviewData] = useState(null);
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewLoading, setPreviewLoading] = useState(false);
     
     const { data, setData, post, processing, errors, reset } = useForm({
         file: null
@@ -82,6 +88,39 @@ export default function ImportStudents({ auth, classrooms }) {
 
     const downloadTemplate = () => {
         window.location.href = route('admin.students.template');
+    };
+
+    const handlePreview = async () => {
+        if (!selectedFile) {
+            alert('Please select a file first');
+            return;
+        }
+
+        setPreviewLoading(true);
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const response = await axios.post(route('admin.students.import.preview'), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+
+            if (response.data.success) {
+                setPreviewData(response.data.data);
+                setShowPreview(true);
+            }
+        } catch (error) {
+            alert('Preview failed: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+    const closePreview = () => {
+        setShowPreview(false);
+        setPreviewData(null);
     };
 
     return (
@@ -231,8 +270,30 @@ export default function ImportStudents({ auth, classrooms }) {
                                     )}
                                 </div>
 
-                                {/* Submit Button */}
-                                <div className="flex justify-end">
+                                {/* Action Buttons */}
+                                <div className="flex justify-between">
+                                    <button
+                                        type="button"
+                                        onClick={handlePreview}
+                                        disabled={previewLoading || !selectedFile}
+                                        className="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
+                                    >
+                                        {previewLoading ? (
+                                            <>
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Loading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <EyeIcon className="h-4 w-4 mr-2" />
+                                                Preview Data
+                                            </>
+                                        )}
+                                    </button>
+
                                     <button
                                         type="submit"
                                         disabled={processing || !data.file}
@@ -306,6 +367,116 @@ export default function ImportStudents({ auth, classrooms }) {
                         </Card>
                     </div>
                 </div>
+
+                {/* Enhanced Error Display */}
+                {flash?.error && (
+                    <Card>
+                        <div className="p-6">
+                            <div className="rounded-md bg-red-50 p-4">
+                                <div className="flex">
+                                    <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-red-800">Import Error</h3>
+                                        <div className="mt-2 text-sm text-red-700">
+                                            <p>{flash.error}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
+                {flash?.success && (
+                    <Card>
+                        <div className="p-6">
+                            <div className="rounded-md bg-green-50 p-4">
+                                <div className="flex">
+                                    <CheckCircleIcon className="h-5 w-5 text-green-400" />
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-green-800">Import Successful</h3>
+                                        <div className="mt-2 text-sm text-green-700">
+                                            <p>{flash.success}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+                
+                {/* Preview Modal */}
+                {showPreview && previewData && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                        <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={closePreview}></div>
+
+                            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg leading-6 font-medium text-gray-900">
+                                            Import Preview - First 10 Rows
+                                        </h3>
+                                        <button
+                                            onClick={closePreview}
+                                            className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <XMarkIcon className="h-6 w-6" />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Row</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission #</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {previewData.map((row, index) => (
+                                                    <tr key={index} className={row.is_valid ? '' : 'bg-red-50'}>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.row_number}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.admission_number}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.name}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.email}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.class}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.gender}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            {row.is_valid ? (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                    Valid
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                    Invalid
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                    <button
+                                        onClick={closePreview}
+                                        className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AuthenticatedLayout>
     );

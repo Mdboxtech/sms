@@ -114,32 +114,86 @@ class ResultController extends Controller
      */
     public function downloadReportCard(Term $term)
     {
+        // Add debug info at the start
+        \Log::info('Report Card Route accessed', [
+            'term_id' => $term->id,
+            'term_name' => $term->name,
+            'user_id' => Auth::id(),
+            'url' => request()->url()
+        ]);
+
         $student = Auth::user()->student;
         
         if (!$student) {
+            \Log::error('Report Card Error: Student profile not found for user ID: ' . Auth::id());
+            
+            // Return JSON response for debugging if this is an AJAX request
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Student profile not found', 'user_id' => Auth::id()], 404);
+            }
+            
             return redirect()->back()
-                ->with('error', 'Student profile not found.');
+                ->with('error', 'Student profile not found. Please contact administrator.');
         }
 
-        // Check if student has results for this term
-        $hasResults = Result::where('student_id', $student->id)
-            ->where('term_id', $term->id)
-            ->exists();
+        \Log::info('Student found', [
+            'student_id' => $student->id,
+            'admission_number' => $student->admission_number
+        ]);
 
-        if (!$hasResults) {
+        // Check if student has results for this term
+        $resultsCount = Result::where('student_id', $student->id)
+            ->where('term_id', $term->id)
+            ->count();
+        
+        \Log::info('Results check', [
+            'student_id' => $student->id,
+            'term_id' => $term->id,
+            'results_count' => $resultsCount
+        ]);
+
+        if ($resultsCount === 0) {
+            \Log::error('Report Card Error: No results found for student ID: ' . $student->id . ', term ID: ' . $term->id);
+            
+            // Return JSON response for debugging if this is an AJAX request
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'No results found', 'student_id' => $student->id, 'term_id' => $term->id], 404);
+            }
+            
             return redirect()->back()
-                ->with('error', 'No results found for this term.');
+                ->with('error', 'No results found for this term. Please contact your teacher.');
         }
 
         try {
+            \Log::info('Report Card: Starting generation for student ID: ' . $student->id . ', term ID: ' . $term->id);
             $reportCardService = new ReportCardService();
             $pdf = $reportCardService->generateReportCard($student, $term);
             
             $fileName = "report_card_{$student->admission_number}_{$term->name}.pdf";
+            \Log::info('Report Card: Successfully generated PDF for: ' . $fileName);
             
             return $pdf->download($fileName);
             
         } catch (\Exception $e) {
+            \Log::error('Report Card Generation Error: ' . $e->getMessage(), [
+                'student_id' => $student->id,
+                'term_id' => $term->id,
+                'error_message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return JSON response for debugging if this is an AJAX request
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'error' => 'Failed to generate report card', 
+                    'message' => $e->getMessage(),
+                    'student_id' => $student->id,
+                    'term_id' => $term->id
+                ], 500);
+            }
+            
             return redirect()->back()
                 ->with('error', 'Failed to generate report card: ' . $e->getMessage());
         }

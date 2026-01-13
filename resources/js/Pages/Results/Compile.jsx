@@ -41,6 +41,7 @@ export default function CompileResults({
         max_score: filters.max_score || ''
     });
 
+
     // Get current term object
     const getCurrentTerm = () => {
         if (!selected_term) return null;

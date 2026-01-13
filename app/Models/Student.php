@@ -53,6 +53,17 @@ class Student extends Model
         return $this->hasMany(StudentExamAttempt::class);
     }
 
+    // Payment Relationships
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function getScheduledExams($termId = null)
     {
         $query = ExamSchedule::where('classroom_id', $this->classroom_id)
@@ -76,5 +87,48 @@ class Student extends Model
             ->with(['examSchedule.exam.subject']);
 
         return $query->completed()->get();
+    }
+
+    // Payment Methods
+    public function getOutstandingFees($sessionId = null, $termId = null)
+    {
+        $query = Fee::active()
+            ->forClassroom($this->classroom_id);
+
+        if ($sessionId) {
+            $query->forSession($sessionId);
+        }
+
+        if ($termId) {
+            $query->forTerm($termId);
+        }
+
+        return $query->get()->map(function ($fee) {
+            return array_merge($fee->toArray(), $fee->getStatusForStudent($this->id));
+        });
+    }
+
+    public function getTotalOutstandingBalance($sessionId = null, $termId = null): float
+    {
+        return $this->getOutstandingFees($sessionId, $termId)
+            ->sum('balance');
+    }
+
+    public function getPaymentHistory($limit = null)
+    {
+        $query = $this->payments()
+            ->with(['fee'])
+            ->orderBy('created_at', 'desc');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
+    public function hasUnpaidFees($sessionId = null, $termId = null): bool
+    {
+        return $this->getTotalOutstandingBalance($sessionId, $termId) > 0;
     }
 }

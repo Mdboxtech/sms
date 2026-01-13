@@ -2,7 +2,9 @@ import { usePage } from '@inertiajs/react';
 
 export default function ApplicationLogo(props) {
     const { appSettings } = usePage().props;
-    
+
+    console.log("test",appSettings);
+
     // If school logo is uploaded, use it
     if (appSettings?.school_logo && appSettings.school_logo.trim() !== '') {
         return (

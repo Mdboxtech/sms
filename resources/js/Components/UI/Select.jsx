@@ -3,7 +3,7 @@ export default function Select({ className = '', ...props }) {
         <select
             {...props}
             className={
-                'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm ' +
+                'border-gray-300 dark:border-gray-600 focus:border-primary focus:ring-primary dark:bg-gray-800 dark:text-gray-100 rounded-md shadow-sm ' +
                 className
             }
         >

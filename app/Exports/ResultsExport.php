@@ -19,7 +19,7 @@ class ResultsExport implements FromCollection, WithHeadings, WithMapping, WithTi
 
     public function collection()
     {
-        $query = Result::with(['student.user', 'student.classroom', 'subject', 'term.academicSession']);
+        $query = Result::with(['student.user', 'student.classroom', 'subject', 'term.academicSession', 'teacher']);
         
         // Apply filters
         if (!empty($this->filters['term_id'])) {
@@ -35,22 +35,40 @@ class ResultsExport implements FromCollection, WithHeadings, WithMapping, WithTi
                 $q->where('classroom_id', $this->filters['classroom_id']);
             });
         }
+
+        if (!empty($this->filters['teacher_id'])) {
+            $query->where('teacher_id', $this->filters['teacher_id']);
+        }
+
+        if (!empty($this->filters['min_score'])) {
+            $query->where('total_score', '>=', $this->filters['min_score']);
+        }
+
+        if (!empty($this->filters['max_score'])) {
+            $query->where('total_score', '<=', $this->filters['max_score']);
+        }
         
-        return $query->get();
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     public function headings(): array
     {
         return [
             'Student Name',
+            'Admission Number',
+            'Class',
             'Subject',
+            'Subject Code',
             'Term',
             'Academic Session',
+            'Teacher',
             'CA Score',
             'Exam Score',
             'Total Score',
             'Grade',
-            'Remark'
+            'Status',
+            'Remark',
+            'Created Date'
         ];
     }
 
@@ -58,14 +76,20 @@ class ResultsExport implements FromCollection, WithHeadings, WithMapping, WithTi
     {
         return [
             $result->student->user->name ?? 'Unknown Student',
+            $result->student->admission_number ?? 'N/A',
+            $result->student->classroom->name ?? 'Not Assigned',
             $result->subject->name ?? 'Unknown Subject',
+            $result->subject->code ?? 'N/A',
             $result->term->name ?? 'Unknown Term',
             $result->term->academicSession->name ?? 'Unknown Session',
+            $result->teacher->name ?? 'N/A',
             $result->ca_score,
             $result->exam_score,
             $result->total_score,
             $this->getGrade($result->total_score),
-            $result->remark ?? ''
+            $result->total_score >= 40 ? 'Pass' : 'Fail',
+            $result->remark ?? '',
+            $result->created_at->format('Y-m-d H:i:s')
         ];
     }
 

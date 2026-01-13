@@ -450,6 +450,16 @@ export default function Results({ auth, results, students, subjects, classrooms,
                                     </button>
                                 </Dropdown.Trigger>
                                 <Dropdown.Content>
+                                    <Dropdown.Link href={route('admin.results.export', {
+                                        classroom_id: data.classroom_id,
+                                        subject_id: data.subject_id,
+                                        term_id: data.term_id,
+                                        teacher_id: data.teacher_id,
+                                        min_score: data.min_score,
+                                        max_score: data.max_score
+                                    })}>
+                                        Export Filtered Results
+                                    </Dropdown.Link>
                                     <Dropdown.Link href={route('admin.results.export')}>
                                         Export All Results
                                     </Dropdown.Link>
@@ -457,9 +467,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
                                         Download Import Template
                                     </Dropdown.Link>
                                 </Dropdown.Content>
-                            </Dropdown>
-
-                            <Link
+                            </Dropdown>                            <Link
                                 href={route('admin.results.import')}
                                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
                             >
@@ -648,7 +656,7 @@ export default function Results({ auth, results, students, subjects, classrooms,
                     )}
 
                     <Card className="shadow-sm">
-                        <div className="p-6 w-full">
+                        <div className="p-6 w-full ">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">
                                     Results List

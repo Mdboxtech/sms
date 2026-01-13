@@ -20,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
@@ -672,28 +674,82 @@ class ResultController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // Max 10MB
             'term_id' => 'required|exists:terms,id'
         ]);
 
         try {
-            Excel::import(new ResultsImport($request->term_id), $request->file('file'));
-            return redirect()->route('admin.results.import')->with('success', 'Results imported successfully.');
+            $file = $request->file('file');
+            $filename = 'results_import_' . time() . '.' . $file->getClientOriginalExtension();
+            
+            // Store file temporarily
+            $path = $file->storeAs('temp', $filename);
+            
+            DB::beginTransaction();
+            
+            $import = new ResultsImport($request->term_id);
+            Excel::import($import, storage_path('app/' . $path));
+            
+            // Clean up temporary file
+            Storage::delete($path);
+            
+            DB::commit();
+            
+            return redirect()->route('admin.results.import')
+                ->with('success', 'Results imported successfully! Please verify the imported data.');
+                
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            
+            $failures = $e->failures();
+            $errors = [];
+            
+            foreach ($failures as $failure) {
+                $errors[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            return redirect()->route('admin.results.import')
+                ->with('error', 'Import validation failed: ' . implode(' | ', array_slice($errors, 0, 5)));
+                
         } catch (\Exception $e) {
-            return redirect()->route('admin.results.import')->with('error', 'Import failed: ' . $e->getMessage());
+            DB::rollBack();
+            
+            // Clean up temporary file if it exists
+            if (isset($path)) {
+                Storage::delete($path);
+            }
+            
+            Log::error('Results import failed: ' . $e->getMessage());
+            return redirect()->route('admin.results.import')
+                ->with('error', 'Import failed: ' . $e->getMessage());
         }
     }
 
     public function export(Request $request)
     {
-        $filters = [
-            'term_id' => $request->term_id,
-            'classroom_id' => $request->classroom_id,
-            'subject_id' => $request->subject_id,
-        ];
+        try {
+            $filters = [
+                'term_id' => $request->term_id,
+                'classroom_id' => $request->classroom_id,
+                'subject_id' => $request->subject_id,
+                'teacher_id' => $request->teacher_id,
+                'min_score' => $request->min_score,
+                'max_score' => $request->max_score,
+            ];
 
-        $filename = 'results_' . date('Y-m-d_H-i-s') . '.xlsx';
-        return Excel::download(new ResultsExport($filters), $filename);
+            // Remove empty filters
+            $filters = array_filter($filters, function($value) {
+                return !empty($value);
+            });
+
+            $filename = 'results_export_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            return Excel::download(new ResultsExport($filters), $filename);
+            
+        } catch (\Exception $e) {
+            Log::error('Results export failed: ' . $e->getMessage());
+            return back()->with('error', 'Export failed: ' . $e->getMessage());
+        }
     }
 
     public function downloadTemplate(Request $request)

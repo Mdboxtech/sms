@@ -68,20 +68,22 @@ class ExamController extends Controller
 
         $exams = $query->paginate(15)->withQueryString();
 
+    
         // Add attempt information for each exam
         $exams->getCollection()->transform(function ($exam) use ($student) {
             $attempt = $exam->studentAttempts()
                 ->where('student_id', $student->id)
                 ->first();
                 
-            $exam->student_attempt = $attempt;
-            $exam->can_take = $this->examTakingService->canStudentTakeExam($student, $exam);
-            $exam->time_remaining = $this->examTakingService->getExamTimeRemaining($exam, $attempt);
-            $exam->exam_status = $this->examTakingService->getExamStatus($exam);
-            $exam->time_until_start = $this->examTakingService->getTimeUntilStart($exam);
+                $exam->student_attempt = $attempt;
+                $exam->can_take = $this->examTakingService->canStudentTakeExam($student, $exam);
+                $exam->time_remaining = $this->examTakingService->getExamTimeRemaining($exam, $attempt);
+                $exam->exam_status = $this->examTakingService->getExamStatus($exam);
+                $exam->time_until_start = $this->examTakingService->getTimeUntilStart($exam);
+                
+                return $exam;
+            });
             
-            return $exam;
-        });
 
         return Inertia::render('Student/CBT/Exams/Index', [
             'exams' => $exams,
@@ -517,11 +519,14 @@ class ExamController extends Controller
      */
     public function results($id)
     {
-        $attempt = StudentExamAttempt::where('student_id', auth()->id())
+        // FIXED: Use Student ID lookup instead of User ID
+        $student = Student::where('user_id', Auth::id())->firstOrFail();
+        
+        $attempt = StudentExamAttempt::where('student_id', $student->id)
             ->findOrFail($id);
 
-        // Load student relationship
-        $attempt->load('student');
+        // Load student and answers relationships
+        $attempt->load(['student', 'answers.question']);
 
         // Always use direct lookup for exam to avoid relationship issues
         $exam = null;
@@ -532,14 +537,10 @@ class ExamController extends Controller
             $exam = $examSchedule ? $examSchedule->exam : null;
         }
 
-        $answers = StudentAnswer::where('student_exam_attempt_id', $attempt->id)
-            ->with('question')
-            ->get();
-
         return Inertia::render('Student/CBT/Exams/Results', [
             'attempt' => $attempt,
-            'exam' => $exam, // Pass exam separately
-            'answers' => $answers,
+            'exam' => $exam,
+            'answers' => $attempt->answers, // Use loaded relationship
         ]);
     }
 

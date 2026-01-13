@@ -27,6 +27,16 @@ export default function TermView({ results, term, statistics, class_average, stu
         }
     };
 
+    // Helper function to safely convert to number and format
+    const safeToFixed = (value, decimals = 1) => {
+        const num = parseFloat(value);
+        return isNaN(num) ? 'N/A' : num.toFixed(decimals);
+    };
+
+    // Convert class_average to number if it's not already
+    const numericClassAverage = parseFloat(class_average);
+    const hasValidClassAverage = !isNaN(numericClassAverage);
+
     return (
         <AuthenticatedLayout>
             <Head title={`Results - ${term.name}`} />
@@ -79,7 +89,7 @@ export default function TermView({ results, term, statistics, class_average, stu
                                 </div>
                                 <div className="ml-4">
                                     <p className="text-sm font-medium text-gray-500">Average Score</p>
-                                    <p className="text-2xl font-bold text-gray-900">{statistics.average_score?.toFixed(1)}%</p>
+                                    <p className="text-2xl font-bold text-gray-900">{safeToFixed(statistics.average_score)}%</p>
                                 </div>
                             </div>
                         </div>
@@ -127,7 +137,7 @@ export default function TermView({ results, term, statistics, class_average, stu
                                 </div>
                                 <div className="ml-4">
                                     <p className="text-sm font-medium text-gray-500">Class Average</p>
-                                    <p className="text-2xl font-bold text-blue-600">{class_average?.toFixed(1) || 'N/A'}%</p>
+                                    <p className="text-2xl font-bold text-blue-600">{hasValidClassAverage ? safeToFixed(numericClassAverage) : 'N/A'}%</p>
                                 </div>
                             </div>
                         </div>
@@ -223,7 +233,7 @@ export default function TermView({ results, term, statistics, class_average, stu
                                 <div className="space-y-2">
                                     {['A', 'B', 'C', 'D', 'F'].map(grade => {
                                         const count = results.filter(r => getGrade(r.total_score).grade === grade).length;
-                                        const percentage = results.length > 0 ? (count / results.length * 100).toFixed(1) : 0;
+                                        const percentage = results.length > 0 ? safeToFixed(count / results.length * 100) : '0';
                                         return (
                                             <div key={grade} className="flex items-center justify-between">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getGradeColor(grade)}`}>
@@ -242,21 +252,21 @@ export default function TermView({ results, term, statistics, class_average, stu
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Your Average:</span>
-                                        <span className="font-medium">{statistics.average_score?.toFixed(1)}%</span>
+                                        <span className="font-medium">{safeToFixed(statistics.average_score)}%</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Class Average:</span>
-                                        <span className="font-medium">{class_average?.toFixed(1) || 'N/A'}%</span>
+                                        <span className="font-medium">{hasValidClassAverage ? safeToFixed(numericClassAverage) : 'N/A'}%</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Difference:</span>
                                         <span className={`font-medium ${
-                                            class_average && statistics.average_score > class_average 
+                                            hasValidClassAverage && statistics.average_score > numericClassAverage 
                                                 ? 'text-green-600' 
                                                 : 'text-red-600'
                                         }`}>
-                                            {class_average 
-                                                ? `${(statistics.average_score - class_average).toFixed(1)}%`
+                                            {hasValidClassAverage 
+                                                ? `${safeToFixed(statistics.average_score - numericClassAverage)}%`
                                                 : 'N/A'
                                             }
                                         </span>

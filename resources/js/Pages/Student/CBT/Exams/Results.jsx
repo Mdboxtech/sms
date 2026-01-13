@@ -137,8 +137,8 @@ export default function Results({ attempt, exam, student }) {
                                     <div>
                                         <div className="text-sm font-medium text-gray-900">Completed At</div>
                                         <div className="text-sm text-gray-600">
-                                            {attempt.completed_at 
-                                                ? new Date(attempt.completed_at).toLocaleString()
+                                            {attempt.end_time 
+                                                ? new Date(attempt.end_time).toLocaleString()
                                                 : 'N/A'
                                             }
                                         </div>

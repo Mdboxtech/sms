@@ -34,6 +34,12 @@ use App\Http\Controllers\Teacher\CBT\ExamController as TeacherCBTExamController;
 use App\Http\Controllers\Student\CBT\ExamController as StudentCBTExamController;
 use App\Http\Controllers\Student\CBT\ResultController as StudentCBTResultController;
 
+// Payment Controllers
+use App\Http\Controllers\Admin\FeeController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Student\PaymentController;
+use App\Http\Controllers\WebhookController;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -42,6 +48,9 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 })->name('home');
+
+// Public Webhook Routes (no authentication required)
+Route::post('/webhook/paystack', [WebhookController::class, 'paystack'])->name('webhook.paystack');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Profile routes (accessible by all authenticated users)
@@ -63,8 +72,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/calendar', [CalendarController::class, 'adminIndex'])->name('calendar');
         Route::resource('classrooms', ClassroomController::class);
         Route::resource('subjects', SubjectController::class);
+        
+        // Student Import/Export Routes
+        Route::post('/students/import', [StudentController::class, 'import'])->name('students.import.process');
+        Route::post('/students/import/preview', [StudentController::class, 'importPreview'])->name('students.import.preview');
+        Route::get('/students/import', [StudentController::class, 'importPage'])->name('students.import');
+        Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
+        Route::get('/students/template', [StudentController::class, 'downloadTemplate'])->name('students.template');
+        
         Route::resource('students', StudentController::class);
         Route::resource('teachers', TeacherController::class);
+
         Route::post('/teachers/assign/subject', [TeacherController::class, 'assignSubject'])->name('teachers.assign.subject');
         Route::post('/teachers/assign/classroom', [TeacherController::class, 'assignClassroom'])->name('teachers.assign.classroom');
         Route::post('/teachers/remove/subject', [TeacherController::class, 'removeSubject'])->name('teachers.remove.subject');
@@ -95,7 +113,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         // Term Results Management
-        Route::resource('term-results', TermResultController::class);
         Route::patch('term-results/{termResult}/comments', [TermResultController::class, 'updateComments'])->name('term-results.comments');
         Route::post('term-results/get-or-create', [TermResultController::class, 'getOrCreate'])->name('term-results.get-or-create');
         Route::post('term-results/bulk-create', [TermResultController::class, 'bulkCreate'])->name('term-results.bulk-create');
@@ -105,6 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('term-results/import', [TermResultController::class, 'importPage'])->name('term-results.import');
         Route::post('term-results/import', [TermResultController::class, 'import'])->name('term-results.import.process');
         Route::get('term-results/download-template', [TermResultController::class, 'downloadTemplate'])->name('term-results.download-template');
+        Route::resource('term-results', TermResultController::class);
         // Report Cards
         Route::get('reports/student-report-card/{student}/term/{term}/classroom/{classroom}', [ReportCardController::class, 'studentReportCard'])->name('reports.student-report-card');
         Route::get('report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
@@ -150,11 +168,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/results/teacher-permissions', [ResultController::class, 'getTeacherPermissions'])->name('results.teacher-permissions');
 
         Route::resource('results', ResultController::class);
-        
-        Route::post('/students/import', [StudentController::class, 'import'])->name('students.import.process');
-        Route::get('/students/import', [StudentController::class, 'importPage'])->name('students.import');
-        Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
-        Route::get('/students/template', [StudentController::class, 'downloadTemplate'])->name('students.template');
 
         // Settings Management
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -167,8 +180,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/backup', [SettingsController::class, 'backup'])->name('backup');
             Route::post('/clear-cache', [SettingsController::class, 'clearCache'])->name('clear.cache');
             Route::post('/optimize', [SettingsController::class, 'optimizeSystem'])->name('optimize');
+            Route::post('/reset-corrupted', [SettingsController::class, 'resetCorruptedSettings'])->name('reset.corrupted');
             Route::post('/active-session', [SettingsController::class, 'setActiveSession'])->name('active.session');
             Route::post('/active-term', [SettingsController::class, 'setActiveTerm'])->name('active.term');
+            
+            // Payment Settings
+            Route::get('/payment', [SettingsController::class, 'paymentSettings'])->name('payment');
+            Route::put('/payment', [SettingsController::class, 'updatePaymentSettings'])->name('updatePaymentSettings');
+            Route::post('/payment/test', [SettingsController::class, 'testPaymentConnection'])->name('payment.test');
+        });
+
+        // Fee Management
+        Route::prefix('fees')->name('fees.')->group(function () {
+            Route::get('/', [FeeController::class, 'index'])->name('index');
+            Route::get('/create', [FeeController::class, 'create'])->name('create');
+            Route::post('/', [FeeController::class, 'store'])->name('store');
+            Route::get('/{fee}', [FeeController::class, 'show'])->name('show');
+            Route::get('/{fee}/edit', [FeeController::class, 'edit'])->name('edit');
+            Route::put('/{fee}', [FeeController::class, 'update'])->name('update');
+            Route::delete('/{fee}', [FeeController::class, 'destroy'])->name('destroy');
+            Route::post('/bulk-status', [FeeController::class, 'bulkUpdateStatus'])->name('bulk.status');
+            Route::post('/{fee}/duplicate', [FeeController::class, 'duplicate'])->name('duplicate');
+            Route::get('/collection/summary', [FeeController::class, 'collectionSummary'])->name('collection.summary');
+        });
+
+        // Admin Payment Management
+        Route::prefix('payments')->name('payments.')->group(function () {
+            Route::get('/', [AdminPaymentController::class, 'index'])->name('index');
+            Route::get('/analytics', [AdminPaymentController::class, 'analytics'])->name('analytics');
+            Route::get('/export', [AdminPaymentController::class, 'export'])->name('export');
+            Route::get('/{payment}', [AdminPaymentController::class, 'show'])->name('show');
+            Route::get('/{payment}/download', [AdminPaymentController::class, 'downloadReceipt'])->name('download');
         });
 
         // CBT (Computer-Based Testing) Management
@@ -199,6 +241,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('reports/exam/{exam}', [AdminCBTExamController::class, 'examReport'])->name('reports.exam');
             Route::get('reports/schedule/{schedule}', [AdminCBTExamScheduleController::class, 'scheduleReport'])->name('reports.schedule');
         });
+
+        // Paystack Demo Route
+        Route::get('/demo/paystack', [SettingsController::class, 'paystackDemo'])->name('demo.paystack');
+        Route::post('/demo/paystack/test', [SettingsController::class, 'testPaystackDemo'])->name('demo.paystack.test');
     });
 
     // Teacher routes
@@ -308,7 +354,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/results/{attempt}', [StudentCBTResultController::class, 'show'])->name('results.show');
             Route::get('/report-card', [StudentCBTResultController::class, 'reportCard'])->name('results.report-card');
         });
+
+        // Payment Management for Students
+        Route::prefix('payments')->name('payments.')->group(function () {
+            Route::get('/dashboard', [PaymentController::class, 'index'])->name('dashboard');
+            Route::post('/initiate', [PaymentController::class, 'initiate'])->name('initiate');
+            Route::get('/callback', [PaymentController::class, 'callback'])->name('callback');
+            Route::get('/success', [PaymentController::class, 'success'])->name('success');
+            Route::get('/failed', [PaymentController::class, 'failed'])->name('failed');
+            Route::get('/history', [PaymentController::class, 'history'])->name('history');
+            Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
+            Route::post('/verify', [PaymentController::class, 'verify'])->name('verify');
+            Route::get('/fee/{fee}/details', [PaymentController::class, 'feeDetails'])->name('fee.details');
+        });
+
+        // Receipt Management for Students
+        Route::prefix('receipts')->name('receipts.')->group(function () {
+            Route::get('/', function() {
+                return redirect()->route('student.payments.history');
+            })->name('index');
+            Route::get('/{payment}/download', [PaymentController::class, 'downloadReceipt'])->name('download');
+        });
     });
-});
+});;
 
 require __DIR__.'/auth.php';

@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StudentsExport;
@@ -98,6 +100,13 @@ class StudentController extends Controller
             ->with('success', 'Student created successfully.');
     }
 
+    public function show(Student $student)
+    {
+        return Inertia::render('Students/Show', [
+            'student' => $student->load(['user', 'classroom', 'results.subject', 'results.term'])
+        ]);
+    }
+
     public function edit(Student $student)
     {
         return Inertia::render('Students/Edit', [
@@ -178,9 +187,17 @@ class StudentController extends Controller
         ]);
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        return Excel::download(new StudentsExport, 'students.xlsx');
+        // Handle export filters
+        $filters = [
+            'classroom_id' => $request->classroom_id,
+            'gender' => $request->gender,
+            'search' => $request->search,
+        ];
+
+        $filename = 'students_' . date('Y-m-d_H-i-s') . '.xlsx';
+        return Excel::download(new StudentsExport($filters), $filename);
     }
 
     public function downloadTemplate()
@@ -201,14 +218,75 @@ class StudentController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls',
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240', // Max 10MB
         ]);
 
         try {
-            Excel::import(new StudentsImport, $request->file('file'));
-            return redirect()->route('admin.students.import')->with('success', 'Students imported successfully.');
+            DB::beginTransaction();
+            
+            $import = new StudentsImport;
+            Excel::import($import, $request->file('file'));
+            
+            DB::commit();
+            
+            // Return success with details
+            return redirect()->route('admin.students.import')->with('success', 
+                'Students imported successfully! ' . 
+                ($import->getRowCount() ?? 0) . ' students processed.'
+            );
+            
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            
+            $failures = $e->failures();
+            $errorMessages = [];
+            
+            foreach ($failures as $failure) {
+                $errorMessages[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            return redirect()->route('admin.students.import')
+                ->with('error', 'Validation failed: ' . implode(' | ', array_slice($errorMessages, 0, 5)))
+                ->with('validation_errors', $errorMessages);
+                
         } catch (\Exception $e) {
-            return redirect()->route('admin.students.import')->with('error', 'Error importing students: ' . $e->getMessage());
+            DB::rollBack();
+            
+            Log::error('Student import failed: ' . $e->getMessage(), [
+                'file' => $request->file('file')->getClientOriginalName(),
+                'user' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('admin.students.import')
+                ->with('error', 'Import failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Preview import data before processing
+     */
+    public function importPreview(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            $import = new StudentsImport;
+            $preview = $import->preview($request->file('file'));
+            
+            return response()->json([
+                'success' => true,
+                'data' => $preview,
+                'total_rows' => count($preview)
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Preview failed: ' . $e->getMessage()
+            ], 400);
         }
     }
 }

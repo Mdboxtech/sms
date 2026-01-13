@@ -7,7 +7,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import Select from '@/Components/UI/Select';
 import Button from '@/Components/UI/Button';
-import { 
+import {
     CogIcon,
     AcademicCapIcon,
     ServerIcon,
@@ -22,13 +22,13 @@ import {
     SwatchIcon
 } from '@heroicons/react/24/outline';
 
-export default function Settings({ 
-    auth, 
-    systemInfo, 
-    appSettings, 
-    themeSettings,
-    currentSession, 
-    currentTerm, 
+export default function Settings({
+    auth,
+    systemInfo,
+    appSettings,
+    formThemeSettings,
+    currentSession,
+    currentTerm,
     backupInfo,
     academicSessions,
     terms,
@@ -65,17 +65,124 @@ export default function Settings({
 
     // Theme Settings Form
     const { data: themeData, setData: setThemeData, post: postTheme, processing: processingTheme, errors: themeErrors } = useForm({
-        theme_primary_start: themeSettings?.theme_primary_start || '#6366f1',
-        theme_primary_end: themeSettings?.theme_primary_end || '#8b5cf6',
-        theme_secondary_start: themeSettings?.theme_secondary_start || '#ec4899',
-        theme_secondary_end: themeSettings?.theme_secondary_end || '#f59e0b',
-        theme_accent_color: themeSettings?.theme_accent_color || '#10b981',
-        theme_background_start: themeSettings?.theme_background_start || '#f8fafc',
-        theme_background_end: themeSettings?.theme_background_end || '#e2e8f0',
-        theme_sidebar_style: themeSettings?.theme_sidebar_style || 'gradient',
-        theme_header_style: themeSettings?.theme_header_style || 'glass',
-        theme_button_style: themeSettings?.theme_button_style || 'gradient',
+        theme_primary_start: formThemeSettings?.theme_primary_start || '#6366f1',
+        theme_primary_end: formThemeSettings?.theme_primary_end || '#8b5cf6',
+        theme_secondary_start: formThemeSettings?.theme_secondary_start || '#ec4899',
+        theme_secondary_end: formThemeSettings?.theme_secondary_end || '#f59e0b',
+        theme_accent_color: formThemeSettings?.theme_accent_color || '#10b981',
+        theme_background_start: formThemeSettings?.theme_background_start || '#f8fafc',
+        theme_background_end: formThemeSettings?.theme_background_end || '#e2e8f0',
+        theme_sidebar_style: formThemeSettings?.theme_sidebar_style || 'gradient',
+        theme_header_style: formThemeSettings?.theme_header_style || 'glass',
+        theme_button_style: formThemeSettings?.theme_button_style || 'gradient',
     });
+
+    // Theme Presets - Professional color schemes
+    const themePresets = [
+        {
+            name: 'Ocean Blue',
+            colors: {
+                theme_primary_start: '#0ea5e9',
+                theme_primary_end: '#2563eb',
+                theme_secondary_start: '#06b6d4',
+                theme_secondary_end: '#0891b2',
+                theme_accent_color: '#14b8a6',
+                theme_background_start: '#f0f9ff',
+                theme_background_end: '#e0f2fe',
+            }
+        },
+        {
+            name: 'Sunset',
+            colors: {
+                theme_primary_start: '#f97316',
+                theme_primary_end: '#ea580c',
+                theme_secondary_start: '#ec4899',
+                theme_secondary_end: '#db2777',
+                theme_accent_color: '#eab308',
+                theme_background_start: '#fff7ed',
+                theme_background_end: '#fef3c7',
+            }
+        },
+        {
+            name: 'Forest',
+            colors: {
+                theme_primary_start: '#22c55e',
+                theme_primary_end: '#16a34a',
+                theme_secondary_start: '#84cc16',
+                theme_secondary_end: '#65a30d',
+                theme_accent_color: '#14b8a6',
+                theme_background_start: '#f0fdf4',
+                theme_background_end: '#dcfce7',
+            }
+        },
+        {
+            name: 'Royal Purple',
+            colors: {
+                theme_primary_start: '#8b5cf6',
+                theme_primary_end: '#7c3aed',
+                theme_secondary_start: '#a855f7',
+                theme_secondary_end: '#9333ea',
+                theme_accent_color: '#c084fc',
+                theme_background_start: '#faf5ff',
+                theme_background_end: '#f3e8ff',
+            }
+        },
+        {
+            name: 'Rose',
+            colors: {
+                theme_primary_start: '#f43f5e',
+                theme_primary_end: '#e11d48',
+                theme_secondary_start: '#ec4899',
+                theme_secondary_end: '#db2777',
+                theme_accent_color: '#fb7185',
+                theme_background_start: '#fff1f2',
+                theme_background_end: '#ffe4e6',
+            }
+        },
+        {
+            name: 'Emerald',
+            colors: {
+                theme_primary_start: '#10b981',
+                theme_primary_end: '#059669',
+                theme_secondary_start: '#14b8a6',
+                theme_secondary_end: '#0d9488',
+                theme_accent_color: '#34d399',
+                theme_background_start: '#ecfdf5',
+                theme_background_end: '#d1fae5',
+            }
+        },
+        {
+            name: 'Midnight',
+            colors: {
+                theme_primary_start: '#6366f1',
+                theme_primary_end: '#4f46e5',
+                theme_secondary_start: '#8b5cf6',
+                theme_secondary_end: '#7c3aed',
+                theme_accent_color: '#a78bfa',
+                theme_background_start: '#f8fafc',
+                theme_background_end: '#e2e8f0',
+            }
+        },
+        {
+            name: 'Fire',
+            colors: {
+                theme_primary_start: '#ef4444',
+                theme_primary_end: '#dc2626',
+                theme_secondary_start: '#f97316',
+                theme_secondary_end: '#ea580c',
+                theme_accent_color: '#fbbf24',
+                theme_background_start: '#fef2f2',
+                theme_background_end: '#fee2e2',
+            }
+        },
+    ];
+
+    // Apply a preset theme
+    const applyPreset = (preset) => {
+        Object.entries(preset.colors).forEach(([key, value]) => {
+            setThemeData(key, value);
+        });
+    };
 
     // Logo Upload Form
     const { data: logoData, setData: setLogoData, post: postLogo, processing: processingLogo, errors: logoErrors } = useForm({
@@ -148,7 +255,7 @@ export default function Settings({
             <Head title="Settings - SMS" />
 
             <div className="space-y-6">
-                <PageHeader 
+                <PageHeader
                     title="System Settings"
                     subtitle="Configure your school management system"
                 />
@@ -178,11 +285,10 @@ export default function Settings({
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                                            activeTab === tab.id
-                                                ? 'border-indigo-500 text-indigo-600'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                        }`}
+                                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
+                                            ? 'border-indigo-500 text-indigo-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            }`}
                                     >
                                         <Icon className="h-5 w-5" />
                                         <span>{tab.name}</span>
@@ -197,7 +303,7 @@ export default function Settings({
                         {activeTab === 'general' && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-medium text-gray-900">School Information</h3>
-                                
+
                                 <form onSubmit={handleGeneralSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                         <div>
@@ -363,7 +469,7 @@ export default function Settings({
                         {activeTab === 'academic' && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-medium text-gray-900">Academic Configuration</h3>
-                                
+
                                 <form onSubmit={handleAcademicSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                         <div>
@@ -444,7 +550,7 @@ export default function Settings({
                                 {/* Active Session and Term */}
                                 <div className="border-t pt-6 space-y-6">
                                     <h4 className="text-md font-medium text-gray-900">Current Academic Period</h4>
-                                    
+
                                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                         <form onSubmit={handleSessionSubmit} className="space-y-4">
                                             <div>
@@ -513,8 +619,32 @@ export default function Settings({
                                     <SwatchIcon className="h-6 w-6 text-indigo-600" />
                                     <h3 className="text-lg font-medium text-gray-900">Theme & Color Customization</h3>
                                 </div>
-                                
+
                                 <form onSubmit={handleThemeSubmit} className="space-y-8">
+                                    {/* Theme Presets */}
+                                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
+                                        <h4 className="text-md font-semibold text-gray-900 mb-2">Quick Theme Presets</h4>
+                                        <p className="text-sm text-gray-600 mb-4">Click on a preset to apply a professional color scheme instantly</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                                            {themePresets.map((preset, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() => applyPreset(preset)}
+                                                    className="group flex flex-col items-center p-3 rounded-xl border-2 border-transparent hover:border-indigo-300 bg-white shadow-sm hover:shadow-md transition-all duration-200"
+                                                >
+                                                    <div
+                                                        className="w-10 h-10 rounded-full mb-2 ring-2 ring-white shadow-md group-hover:scale-110 transition-transform"
+                                                        style={{
+                                                            background: `linear-gradient(135deg, ${preset.colors.theme_primary_start}, ${preset.colors.theme_primary_end})`
+                                                        }}
+                                                    />
+                                                    <span className="text-xs font-medium text-gray-700 text-center leading-tight">{preset.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     {/* Primary Gradient */}
                                     <div className="bg-gray-50 rounded-xl p-6">
                                         <h4 className="text-md font-semibold text-gray-900 mb-4">Primary Gradient</h4>
@@ -561,11 +691,11 @@ export default function Settings({
                                                 <InputError message={themeErrors.theme_primary_end} className="mt-2" />
                                             </div>
                                         </div>
-                                        
+
                                         {/* Primary Gradient Preview */}
                                         <div className="mt-4">
                                             <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                                            <div 
+                                            <div
                                                 className="h-16 rounded-lg border"
                                                 style={{
                                                     background: `linear-gradient(135deg, ${themeData.theme_primary_start}, ${themeData.theme_primary_end})`
@@ -624,7 +754,7 @@ export default function Settings({
                                         {/* Secondary Gradient Preview */}
                                         <div className="mt-4">
                                             <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                                            <div 
+                                            <div
                                                 className="h-16 rounded-lg border"
                                                 style={{
                                                     background: `linear-gradient(135deg, ${themeData.theme_secondary_start}, ${themeData.theme_secondary_end})`
@@ -768,11 +898,11 @@ export default function Settings({
                                                         type="button"
                                                         className="px-4 py-2 rounded-lg text-white font-medium"
                                                         style={{
-                                                            background: themeData.theme_button_style === 'gradient' 
+                                                            background: themeData.theme_button_style === 'gradient'
                                                                 ? `linear-gradient(135deg, ${themeData.theme_primary_start}, ${themeData.theme_primary_end})`
                                                                 : themeData.theme_button_style === 'solid'
-                                                                ? themeData.theme_primary_start
-                                                                : 'transparent',
+                                                                    ? themeData.theme_primary_start
+                                                                    : 'transparent',
                                                             border: themeData.theme_button_style === 'outline' ? `2px solid ${themeData.theme_primary_start}` : 'none',
                                                             color: themeData.theme_button_style === 'outline' ? themeData.theme_primary_start : 'white'
                                                         }}
@@ -794,7 +924,7 @@ export default function Settings({
                                             {/* Background Preview */}
                                             <div>
                                                 <p className="text-sm text-gray-600 mb-3">Background Gradient:</p>
-                                                <div 
+                                                <div
                                                     className="h-20 rounded-lg border"
                                                     style={{
                                                         background: `linear-gradient(135deg, ${themeData.theme_background_start}, ${themeData.theme_background_end})`
@@ -821,7 +951,7 @@ export default function Settings({
                         {activeTab === 'system' && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-medium text-gray-900">System Configuration</h3>
-                                
+
                                 <form onSubmit={handleSystemSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                         <div>
@@ -932,7 +1062,7 @@ export default function Settings({
                         {activeTab === 'maintenance' && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-medium text-gray-900">System Maintenance</h3>
-                                
+
                                 {/* Backup Section */}
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <div className="flex items-start">

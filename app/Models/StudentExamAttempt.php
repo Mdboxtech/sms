@@ -262,11 +262,28 @@ class StudentExamAttempt extends Model
             return null;
         }
 
-        $examDuration = $this->examSchedule->exam->duration * 60; // Convert to seconds
-        $timeElapsed = $this->start_time->diffInSeconds(now());
-        $scheduleTimeRemaining = $this->examSchedule->getTimeRemaining() ?? $examDuration;
+        // FIXED: Handle both schedule-based and direct exam attempts
+        $exam = null;
+        if ($this->exam_id) {
+            $exam = Exam::find($this->exam_id);
+        } elseif ($this->examSchedule) {
+            $exam = $this->examSchedule->exam;
+        }
 
-        return min($examDuration - $timeElapsed, $scheduleTimeRemaining);
+        if (!$exam) {
+            return null;
+        }
+
+        $examDuration = ($exam->duration_minutes ?: $exam->duration) * 60; // Convert to seconds
+        $timeElapsed = $this->start_time->diffInSeconds(now());
+        
+        // For schedule-based exams, also consider schedule end time
+        if ($this->examSchedule) {
+            $scheduleTimeRemaining = $this->examSchedule->getTimeRemaining() ?? $examDuration;
+            return max(0, min($examDuration - $timeElapsed, $scheduleTimeRemaining));
+        }
+
+        return max(0, $examDuration - $timeElapsed);
     }
 
     public function getFormattedDuration(): string
