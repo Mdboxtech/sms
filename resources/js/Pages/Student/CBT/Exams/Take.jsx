@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Card from '@/Components/ui/Card';
-import Button from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/badge';
-import { Alert, AlertDescription } from '@/Components/ui/alert';
+import Card from '@/Components/UI/Card';
+import Button from '@/Components/UI/Button';
+import { Badge } from '@/Components/UI/badge';
+import { Alert, AlertDescription } from '@/Components/UI/alert';
 import { 
     Clock, 
     Flag, 

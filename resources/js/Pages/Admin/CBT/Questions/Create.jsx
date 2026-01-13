@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
+import Button from '@/Components/UI/Button';
+import Card from '@/Components/UI/Card';
 import { FormInput, FormLabel, FormSelect } from '@/Components/UI';
 
 export default function Create({ 

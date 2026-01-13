@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Button from '@/Components/ui/Button';
+import Button from '@/Components/UI/Button';
 import { FormInput, FormLabel, FormTextarea, FormSelect } from '@/Components/UI';
-import Card from '@/Components/ui/Card';
+import Card from '@/Components/UI/Card';
 import { Plus, Minus, Save, ArrowLeft } from 'lucide-react';
 
 export default function Edit({ 

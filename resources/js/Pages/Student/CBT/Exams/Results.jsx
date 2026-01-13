@@ -1,9 +1,9 @@
 import React from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Card from '@/Components/ui/Card';
-import Button from '@/Components/ui/Button';
-import { Badge } from '@/Components/ui/badge';
+import Card from '@/Components/UI/Card';
+import Button from '@/Components/UI/Button';
+import { Badge } from '@/Components/UI/badge';
 import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 export default function Results({ attempt, exam, student }) {

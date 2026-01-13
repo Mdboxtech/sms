@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import DataTable from '@/Components/DataTable';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
+import Button from '@/Components/UI/Button';
+import Card from '@/Components/UI/Card';
 import { FormInput, FormLabel, FormSelect } from '@/Components/UI';
 import { CheckSquare, PenTool, BookOpen } from 'lucide-react';
 

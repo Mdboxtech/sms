@@ -1,8 +1,8 @@
 import React from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
+import Button from '@/Components/UI/Button';
+import Card from '@/Components/UI/Card';
 import { CalendarIcon, ClockIcon, BookOpenIcon, UserIcon } from '@heroicons/react/24/outline';
 
 export default function Timetable({ auth, examSchedules = [], student }) {

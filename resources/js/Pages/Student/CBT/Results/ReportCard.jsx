@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
+import Button from '@/Components/UI/Button';
+import Card from '@/Components/UI/Card';
 import { PrinterIcon, DownloadIcon } from '@heroicons/react/24/outline';
 
 export default function ReportCard({ 
