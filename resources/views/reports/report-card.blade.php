@@ -193,7 +193,7 @@
         }
         
         .results-table th {
-            background: #1e40af;
+            background: {{ $report_card_settings['table_header_color'] ?? '#1e40af' }};
             color: white;
             padding: 4px 2px;
             text-align: center;
@@ -204,7 +204,7 @@
         .results-table td {
             padding: 3px 2px;
             text-align: center;
-            border: 1px solid #e2e8f0;
+            border: 1px solid {{ $report_card_settings['table_border_color'] ?? '#e2e8f0' }};
             font-size: 8px;
         }
         

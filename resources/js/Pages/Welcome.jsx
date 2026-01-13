@@ -25,6 +25,16 @@ export default function Welcome({ auth, laravelVersion, phpVersion, appSettings 
     const secondaryEnd = themeSettings?.secondary_end || '#f59e0b';
     const accentColor = themeSettings?.accent_color || '#10b981';
 
+    // Get dashboard route based on user role
+    const getDashboardRoute = () => {
+        if (!auth.user) return route('login');
+        const role = auth.user.role?.name;
+        if (role === 'admin') return route('admin.dashboard');
+        if (role === 'teacher') return route('teacher.dashboard');
+        if (role === 'student') return route('student.dashboard');
+        return route('admin.dashboard'); // fallback
+    };
+
     // Use dynamic school configuration from settings
     const schoolConfig = {
         name: appSettings?.school_name || "Excellence Academy",
@@ -146,8 +156,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion, appSettings 
                 {/* Header */}
                 <header
                     className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
-                            ? 'bg-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-xl'
-                            : 'bg-transparent'
+                        ? 'bg-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-xl'
+                        : 'bg-transparent'
                         }`}
                 >
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -178,7 +188,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, appSettings 
 
                                 {auth.user ? (
                                     <Link
-                                        href={route('admin.dashboard')}
+                                        href={getDashboardRoute()}
                                         className="px-5 py-2.5 rounded-xl font-semibold text-white flex items-center space-x-2 transition-all duration-300 hover:scale-105 shadow-lg"
                                         style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
                                     >
@@ -221,7 +231,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, appSettings 
                                     <a href="#testimonials" className="text-slate-300 hover:text-white transition-colors font-medium py-2">Testimonials</a>
                                     {auth.user ? (
                                         <Link
-                                            href={route('admin.dashboard')}
+                                            href={getDashboardRoute()}
                                             className="px-5 py-3 rounded-xl font-semibold text-white text-center transition-all"
                                             style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
                                         >
@@ -293,7 +303,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, appSettings 
                                     )}
                                     {auth.user && (
                                         <Link
-                                            href={route('admin.dashboard')}
+                                            href={getDashboardRoute()}
                                             className="px-8 py-4 rounded-xl font-semibold text-white flex items-center justify-center space-x-2 transition-all duration-300 hover:scale-105 shadow-xl group"
                                             style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
                                         >

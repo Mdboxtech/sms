@@ -111,10 +111,21 @@ class ResultController extends Controller
                 ->with('error', 'Teacher profile not found.');
         }
 
-        // Get all classrooms the teacher is assigned to
-        $teacherClassrooms = $this->classTeacherService->getTeacherClassrooms($teacher->id);
+        // Get classrooms from Class Teacher assignments
+        $classTeacherClassrooms = $this->classTeacherService->getTeacherClassrooms($teacher->id);
         
-        // Get all manageable subjects across all assigned classrooms
+        // Get classrooms from Subject Teacher assignments (subjects the teacher teaches)
+        $subjectTeacherClassrooms = $teacher->subjects()
+            ->with('classrooms')
+            ->get()
+            ->pluck('classrooms')
+            ->flatten()
+            ->unique('id');
+        
+        // Merge both and remove duplicates
+        $teacherClassrooms = $classTeacherClassrooms->merge($subjectTeacherClassrooms)->unique('id')->values();
+        
+        // Get all manageable subjects across all accessible classrooms
         $manageableSubjects = collect();
         foreach ($teacherClassrooms as $classroom) {
             $classroomSubjects = $this->classTeacherService->getTeacherManageableSubjects($teacher->id, $classroom->id);
@@ -125,18 +136,15 @@ class ResultController extends Controller
         $subjects = $manageableSubjects->unique('id')->values();
         $students = collect();
         
-        // If a classroom is selected, get its students
+        // If a classroom is selected, get its students and filter subjects
         if ($request->classroom_id) {
             $students = Student::with('user')
                 ->where('classroom_id', $request->classroom_id)
                 ->orderBy('admission_number')
                 ->get();
                 
-            // Filter subjects to only those available in this classroom
-            if ($this->classTeacherService->isTeacherAssignedToClass($teacher->id, $request->classroom_id)) {
-                $classroomSubjects = $this->classTeacherService->getClassroomSubjects($request->classroom_id);
-                $subjects = $classroomSubjects;
-            }
+            // Get subjects for this specific classroom
+            $subjects = $this->classTeacherService->getTeacherManageableSubjects($teacher->id, $request->classroom_id);
         }
 
         return Inertia::render('Teacher/Results/Create', [
@@ -160,7 +168,24 @@ class ResultController extends Controller
         $teacher = Auth::user()->teacher;
         
         // Verify teacher can create result for this subject
-        if (!$teacher->subjects->contains($request->subject_id)) {
+        $canCreate = false;
+
+        // 1. Check if directly assigned to subject
+        if ($teacher->subjects->contains($request->subject_id)) {
+            $canCreate = true;
+        } 
+        // 2. Check if class teacher and subject belongs to class
+        else {
+            $student = Student::find($request->student_id);
+            if ($student && $this->classTeacherService->isTeacherAssignedToClass($teacher->id, $student->classroom_id)) {
+                 $classroomSubjects = $this->classTeacherService->getClassroomSubjects($student->classroom_id);
+                 if ($classroomSubjects->contains('id', $request->subject_id)) {
+                     $canCreate = true;
+                 }
+            }
+        }
+
+        if (!$canCreate) {
             return redirect()->back()
                 ->withErrors(['subject_id' => 'You are not authorized to create results for this subject.']);
         }
@@ -253,7 +278,24 @@ class ResultController extends Controller
         try {
             foreach ($request->results as $resultData) {
                 // Verify teacher can create result for this subject
-                if (!$teacher->subjects->contains($resultData['subject_id'])) {
+                $canCreate = false;
+
+                // 1. Check if directly assigned to subject
+                if ($teacher->subjects->contains($resultData['subject_id'])) {
+                    $canCreate = true;
+                } 
+                // 2. Check if class teacher and subject belongs to class
+                else {
+                    $student = Student::find($resultData['student_id']);
+                    if ($student && $this->classTeacherService->isTeacherAssignedToClass($teacher->id, $student->classroom_id)) {
+                         $classroomSubjects = $this->classTeacherService->getClassroomSubjects($student->classroom_id);
+                         if ($classroomSubjects->contains('id', $resultData['subject_id'])) {
+                             $canCreate = true;
+                         }
+                    }
+                }
+
+                if (!$canCreate) {
                     $skipped++;
                     continue;
                 }
@@ -309,7 +351,10 @@ class ResultController extends Controller
                 'subject',
                 'term.academicSession'
             ]),
-            'subjects' => $teacher->subjects,
+            'subjects' => $this->classTeacherService->getTeacherManageableSubjects(
+                $teacher->id, 
+                $result->student->classroom_id
+            ),
             'students' => Student::with('user')
                 ->where('classroom_id', $result->student->classroom_id)
                 ->orderBy('admission_number')
@@ -351,21 +396,28 @@ class ResultController extends Controller
     /**
      * Get students for a classroom (AJAX)
      */
+    /**
+     * Get students and subjects for a classroom (AJAX)
+     */
     public function getClassroomStudents($classroomId)
     {
         $teacher = Auth::user()->teacher;
+        \Illuminate\Support\Facades\Log::info('getClassroomStudents: Request', ['teacher_id' => $teacher->id, 'classroom_id' => $classroomId]);
         
-        // Get classrooms that teach the teacher's subjects
-        $teacherClassrooms = $teacher->subjects()
-            ->with('classrooms')
-            ->get()
-            ->pluck('classrooms')
-            ->flatten()
-            ->pluck('id')
-            ->unique();
+        // Check if teacher has access to this classroom (either as class teacher or subject teacher)
+        $isClassTeacher = $this->classTeacherService->isTeacherAssignedToClass($teacher->id, $classroomId);
         
-        // Verify teacher has access to this classroom
-        if (!$teacherClassrooms->contains($classroomId)) {
+        $hasSubjectAssignment = $teacher->subjects()->whereHas('classrooms', function($q) use ($classroomId) {
+            $q->where('classrooms.id', $classroomId); 
+        })->exists();
+
+        \Illuminate\Support\Facades\Log::info('getClassroomStudents: Permissions', [
+            'isClassTeacher' => $isClassTeacher, 
+            'hasSubjectAssignment' => $hasSubjectAssignment
+        ]);
+
+        if (!$isClassTeacher && !$hasSubjectAssignment) {
+            \Illuminate\Support\Facades\Log::warning('getClassroomStudents: Unauthorized');
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -374,7 +426,18 @@ class ResultController extends Controller
             ->orderBy('admission_number')
             ->get();
 
-        return response()->json($students);
+        // Get subjects available for this teacher in this classroom
+        $subjects = $this->classTeacherService->getTeacherManageableSubjects($teacher->id, $classroomId);
+        
+        \Illuminate\Support\Facades\Log::info('getClassroomStudents: Data Found', [
+            'students_count' => $students->count(),
+            'subjects_count' => $subjects->count()
+        ]);
+
+        return response()->json([
+            'students' => $students,
+            'subjects' => $subjects
+        ]);
     }
 
     /**

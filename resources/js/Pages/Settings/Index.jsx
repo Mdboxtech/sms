@@ -618,7 +618,7 @@ export default function Settings({
 
                         {/* Report Card Settings */}
                         {activeTab === 'report_cards' && (
-                            <ReportCardSettings settings={reportCardSettings} />
+                            <ReportCardSettings settings={reportCardSettings} appSettings={appSettings} />
                         )}
 
                         {/* Theme Settings */}

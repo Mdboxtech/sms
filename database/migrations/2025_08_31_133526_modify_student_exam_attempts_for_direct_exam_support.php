@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         
         Schema::table('student_exam_attempts', function (Blueprint $table) {
             // Drop the foreign key first to allow dropping the index
@@ -42,7 +42,7 @@ return new class extends Migration
         });
         
         // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -51,7 +51,7 @@ return new class extends Migration
     public function down(): void
     {
         // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         
         Schema::table('student_exam_attempts', function (Blueprint $table) {
             // Drop the new unique constraints
@@ -70,6 +70,6 @@ return new class extends Migration
         });
         
         // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
     }
 };

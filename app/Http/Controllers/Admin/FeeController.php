@@ -79,29 +79,11 @@ class FeeController extends Controller
     public function create()
     {
         return Inertia::render('Admin/Fees/Create', [
-            'classrooms' => Classroom::all(),
-            'academicSessions' => AcademicSession::all(),
-            'terms' => Term::all(),
-            'feeTypes' => [
-                'tuition' => 'Tuition Fee',
-                'development' => 'Development Levy',
-                'sport' => 'Sport Fee',
-                'library' => 'Library Fee',
-                'laboratory' => 'Laboratory Fee',
-                'examination' => 'Examination Fee',
-                'uniform' => 'Uniform Fee',
-                'feeding' => 'Feeding Fee',
-                'transport' => 'Transport Fee',
-                'hostel' => 'Hostel Fee',
-                'maintenance' => 'Maintenance Fee',
-                'other' => 'Other Fee',
-            ],
-            'paymentFrequencies' => [
-                'termly' => 'Termly',
-                'monthly' => 'Monthly',
-                'annually' => 'Annually',
-                'one_time' => 'One Time',
-            ],
+            'classrooms' => Classroom::orderBy('name')->get(),
+            'academicSessions' => AcademicSession::orderByDesc('is_current')->orderByDesc('start_date')->get(),
+            'terms' => Term::with('academicSession')->orderByDesc('is_current')->get(),
+            'feeTypes' => Fee::getFeeTypes(),
+            'paymentFrequencies' => Fee::getPaymentFrequencies(),
         ]);
     }
 
@@ -119,7 +101,10 @@ class FeeController extends Controller
             'classroom_id' => 'nullable|exists:classrooms,id',
             'academic_session_id' => 'required|exists:academic_sessions,id',
             'term_id' => 'nullable|exists:terms,id',
+            'is_active' => 'boolean',
             'is_mandatory' => 'boolean',
+            'allow_partial_payment' => 'boolean',
+            'minimum_amount' => 'nullable|numeric|min:0',
             'due_date' => 'nullable|date|after:today',
             'late_fee_amount' => 'nullable|numeric|min:0',
             'grace_period_days' => 'nullable|integer|min:0|max:365',
@@ -134,7 +119,7 @@ class FeeController extends Controller
             'classroom_id' => $request->classroom_id,
             'academic_session_id' => $request->academic_session_id,
             'term_id' => $request->term_id,
-            'is_active' => true,
+            'is_active' => $request->boolean('is_active', true),
             'is_mandatory' => $request->boolean('is_mandatory', true),
             'due_date' => $request->due_date,
             'late_fee_amount' => $request->late_fee_amount ?? 0,
@@ -186,29 +171,11 @@ class FeeController extends Controller
         
         return Inertia::render('Admin/Fees/Edit', [
             'fee' => $fee,
-            'classrooms' => Classroom::all(),
-            'academicSessions' => AcademicSession::all(),
-            'terms' => Term::all(),
-            'feeTypes' => [
-                'tuition' => 'Tuition Fee',
-                'development' => 'Development Levy',
-                'sport' => 'Sport Fee',
-                'library' => 'Library Fee',
-                'laboratory' => 'Laboratory Fee',
-                'examination' => 'Examination Fee',
-                'uniform' => 'Uniform Fee',
-                'feeding' => 'Feeding Fee',
-                'transport' => 'Transport Fee',
-                'hostel' => 'Hostel Fee',
-                'maintenance' => 'Maintenance Fee',
-                'other' => 'Other Fee',
-            ],
-            'paymentFrequencies' => [
-                'termly' => 'Termly',
-                'monthly' => 'Monthly',
-                'annually' => 'Annually',
-                'one_time' => 'One Time',
-            ],
+            'classrooms' => Classroom::orderBy('name')->get(),
+            'academicSessions' => AcademicSession::orderByDesc('is_current')->orderByDesc('start_date')->get(),
+            'terms' => Term::with('academicSession')->orderByDesc('is_current')->get(),
+            'feeTypes' => Fee::getFeeTypes(),
+            'paymentFrequencies' => Fee::getPaymentFrequencies(),
         ]);
     }
 

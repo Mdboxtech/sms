@@ -38,13 +38,24 @@ class ResultPolicy
 
         // Teacher can view results based on subject assignment OR class assignment
         if ($user->role?->name === 'teacher') {
+            // Allow if teacher created the result
+            if ($result->teacher_id === $user->id) {
+                return true;
+            }
+
             $teacher = $user->teacher;
             if ($teacher) {
-                return $this->classTeacherService->canTeacherManageSubjectResult(
+                // Check specific subject permission first
+                if ($this->classTeacherService->canTeacherManageSubjectResult(
                     $teacher->id,
                     $result->subject_id,
                     $result->student_id
-                );
+                )) {
+                    return true;
+                }
+
+                // Fallback: Allow Class Teacher to view any result for their student
+                return $this->classTeacherService->canTeacherManageStudentResults($teacher->id, $result->student_id);
             }
         }
 
@@ -93,6 +104,9 @@ class ResultPolicy
     /**
      * Determine whether the user can update the result.
      */
+    /**
+     * Determine whether the user can update the result.
+     */
     public function update(User $user, Result $result): bool
     {
         // Admin can update all results
@@ -102,13 +116,25 @@ class ResultPolicy
 
         // Teacher can update results based on subject assignment OR class assignment
         if ($user->role?->name === 'teacher') {
+            // Allow if teacher created the result
+            if ((int)$result->teacher_id === (int)$user->id) {
+                return true;
+            }
+
             $teacher = $user->teacher;
             if ($teacher) {
-                return $this->classTeacherService->canTeacherManageSubjectResult(
+                // Check specific subject permission first
+                if ($this->classTeacherService->canTeacherManageSubjectResult(
                     $teacher->id,
                     $result->subject_id,
                     $result->student_id
-                );
+                )) {
+                    return true;
+                }
+
+                // Fallback: Allow Class Teacher to update any result for their student
+                // This covers cases where subject assignment might have changed or is not strictly mapped
+                return $this->classTeacherService->canTeacherManageStudentResults($teacher->id, $result->student_id);
             }
         }
 
@@ -125,15 +151,23 @@ class ResultPolicy
             return true;
         }
 
-        // Teacher can delete results they created and can manage
-        if ($user->role?->name === 'teacher' && $result->teacher_id === $user->id) {
+        // Teacher can delete results they created
+        if ($user->role?->name === 'teacher') {
+            if ((int)$result->teacher_id === (int)$user->id) {
+                return true;
+            }
+
             $teacher = $user->teacher;
             if ($teacher) {
-                return $this->classTeacherService->canTeacherManageSubjectResult(
+                 if ($this->classTeacherService->canTeacherManageSubjectResult(
                     $teacher->id,
                     $result->subject_id,
                     $result->student_id
-                );
+                )) {
+                    return true;
+                }
+                
+                return $this->classTeacherService->canTeacherManageStudentResults($teacher->id, $result->student_id);
             }
         }
 

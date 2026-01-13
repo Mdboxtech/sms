@@ -301,7 +301,7 @@ class ResultController extends Controller
     public function bulkCreate()
     {
         return Inertia::render('Results/BulkCreate', [
-            'students' => Student::with('user')->get(),
+            'classrooms' => Classroom::orderBy('name')->get(),
             'subjects' => Subject::all(),
             'terms' => Term::with('academicSession')
                 ->whereHas('academicSession', function($query) {

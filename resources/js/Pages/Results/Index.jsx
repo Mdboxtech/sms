@@ -414,6 +414,16 @@ export default function Results({ auth, results, students, subjects, classrooms,
 
                             <Button
                                 as={Link}
+                                href={route('admin.results.bulk-create')}
+                                variant="warning"
+                                className="inline-flex items-center"
+                            >
+                                <UserGroupIcon className="h-4 w-4 mr-2" />
+                                Bulk Entry
+                            </Button>
+
+                            <Button
+                                as={Link}
                                 href={route('admin.results.compile')}
                                 variant="success"
                                 className="inline-flex items-center"

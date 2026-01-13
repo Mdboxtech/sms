@@ -249,6 +249,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Teacher routes
+    Route::redirect('/teacher', '/teacher/dashboard');
     Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teacherDashboard'])->name('dashboard');
         Route::get('/subjects', [SubjectController::class, 'teacherSubjects'])->name('subjects');

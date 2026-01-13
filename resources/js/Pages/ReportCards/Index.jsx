@@ -132,8 +132,8 @@ export default function ReportCards({ auth, students, terms, classrooms, filters
                     </div>
 
                     {/* Generate Report Card Form - Combined */}
-                    <Card className="max-w-xl">
-                        <div className="p-6">
+                    <Card className="max-w-xl overflow-visible">
+                        <div className="p-6 overflow-visible">
                             <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
                                 <PrinterIcon className="h-5 w-5 mr-2" />
                                 Generate Report Card

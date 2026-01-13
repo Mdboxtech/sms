@@ -24,15 +24,33 @@ class ResultController extends Controller
                 ->with('error', 'Student profile not found.');
         }
 
+        // Get current term
+        $currentTerm = Term::whereHas('academicSession', function($q) {
+            $q->where('is_current', true);
+        })->where('is_current', true)->first();
+
+        // Determine which term to show
+        // Default to current term unless 'show_all' is true or a specific term is selected
+        $showAll = $request->boolean('show_all', false);
+        $selectedTermId = $request->term_id;
+
         $query = Result::where('student_id', $student->id)
-            ->with(['subject', 'term.academicSession', 'teacher.user'])
-            ->when($request->term_id, function ($query, $term_id) {
-                return $query->where('term_id', $term_id);
-            })
-            ->when($request->subject_id, function ($query, $subject_id) {
-                return $query->where('subject_id', $subject_id);
-            })
-            ->latest();
+            ->with(['subject', 'term.academicSession', 'teacher.user']);
+
+        // Apply term filter
+        if (!$showAll) {
+            if ($selectedTermId) {
+                // Show specific term if selected
+                $query->where('term_id', $selectedTermId);
+            } else if ($currentTerm) {
+                // Default to current term
+                $query->where('term_id', $currentTerm->id);
+            }
+        }
+
+        $query->when($request->subject_id, function ($query, $subject_id) {
+            return $query->where('subject_id', $subject_id);
+        })->latest();
 
         $reportCardService = new ReportCardService();
 
@@ -48,11 +66,24 @@ class ResultController extends Controller
             return $result->term->name . ' - ' . $result->term->academicSession->name;
         });
 
+        // Get all terms the student has results in
+        $termsWithResults = Term::with('academicSession')
+            ->whereHas('results', function($q) use ($student) {
+                $q->where('student_id', $student->id);
+            })
+            ->orderByDesc('id')
+            ->get();
+
         return Inertia::render('Student/Results/Index', [
             'results_by_term' => $resultsByTerm,
-            'terms' => Term::with('academicSession')->get(),
+            'terms' => $termsWithResults,
+            'current_term' => $currentTerm,
             'subjects' => $student->classroom->subjects ?? collect(),
-            'filters' => $request->only(['term_id', 'subject_id']),
+            'filters' => [
+                'term_id' => $selectedTermId ?: ($currentTerm ? $currentTerm->id : null),
+                'subject_id' => $request->subject_id,
+                'show_all' => $showAll,
+            ],
             'student' => $student->load(['user', 'classroom'])
         ]);
     }

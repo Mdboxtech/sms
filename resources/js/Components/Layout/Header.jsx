@@ -19,10 +19,11 @@ import {
     ClockIcon,
     AcademicCapIcon,
     SparklesIcon,
-    GlobeAltIcon
+    GlobeAltIcon,
+    Bars3Icon
 } from '@heroicons/react/24/outline';
 
-export default function Header() {
+export default function Header({ onMenuClick }) {
     const { auth, appSettings, themeSettings } = usePage().props;
     const { isDarkMode, toggleDarkMode } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
@@ -118,15 +119,24 @@ export default function Header() {
             {/* Main Header Content */}
             <div className="px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    {/* Left Section - Title and Breadcrumbs */}
+                    {/* Left Section - Hamburger and Title */}
                     <div className="flex items-center space-x-4 flex-1 min-w-0">
+                        {/* Mobile Hamburger Menu */}
+                        <button
+                            onClick={onMenuClick}
+                            className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
+                            aria-label="Open menu"
+                        >
+                            <Bars3Icon className="w-6 h-6 text-gray-600" />
+                        </button>
+
                         {/* Page Title */}
                         <div className="flex flex-col">
-                            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+                            <h1 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight truncate">
                                 {title}
                             </h1>
-                            {/* Breadcrumbs */}
-                            <nav className="flex items-center space-x-1 text-sm">
+                            {/* Breadcrumbs - Hidden on small screens */}
+                            <nav className="hidden sm:flex items-center space-x-1 text-sm">
                                 {breadcrumbs.map((crumb, index) => (
                                     <div key={crumb.name} className="flex items-center">
                                         {index > 0 && (

@@ -223,6 +223,14 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
         
+        // Return empty response if not authenticated
+        if (!$user) {
+            return response()->json([
+                'count' => 0,
+                'notifications' => []
+            ]);
+        }
+        
         $unreadNotifications = Notification::where(function($query) use ($user) {
             // Broadcast notifications (target_id is null)
             $query->whereNull('target_id')

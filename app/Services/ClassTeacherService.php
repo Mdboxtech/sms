@@ -25,7 +25,7 @@ class ClassTeacherService
     {
         return Teacher::where('id', $teacherId)
             ->whereHas('classrooms', function ($query) use ($classroomId) {
-                $query->where('classroom_id', $classroomId);
+                $query->where('classrooms.id', $classroomId);
             })
             ->exists();
     }
@@ -39,7 +39,7 @@ class ClassTeacherService
                 $query->where('id', $userId);
             })
             ->whereHas('classrooms', function ($query) use ($classroomId) {
-                $query->where('classroom_id', $classroomId);
+                $query->where('classrooms.id', $classroomId);
             })
             ->exists();
     }
@@ -103,13 +103,17 @@ class ClassTeacherService
      */
     public function canTeacherManageSubjectResult($teacherId, $subjectId, $studentId): bool
     {
+        \Illuminate\Support\Facades\Log::info("DEBUG: Checking permission", ['teacher' => $teacherId, 'subject' => $subjectId, 'student' => $studentId]);
+
         $teacher = Teacher::find($teacherId);
         if (!$teacher) {
+            \Illuminate\Support\Facades\Log::info("DEBUG: Teacher not found");
             return false;
         }
 
         // Method 1: Direct subject assignment
-        $hasSubjectAssignment = $teacher->subjects()->where('subject_id', $subjectId)->exists();
+        $hasSubjectAssignment = $teacher->subjects()->where('subjects.id', $subjectId)->exists();
+        \Illuminate\Support\Facades\Log::info("DEBUG: Direct assignment check", ['result' => $hasSubjectAssignment]);
         
         if ($hasSubjectAssignment) {
             return true;
@@ -118,18 +122,21 @@ class ClassTeacherService
         // Method 2: Class-based assignment
         $student = \App\Models\Student::with('classroom')->find($studentId);
         if (!$student || !$student->classroom) {
+            \Illuminate\Support\Facades\Log::info("DEBUG: Student or classroom not found");
             return false;
         }
 
         // Check if teacher is assigned to the student's class
         $isClassTeacher = $this->isTeacherAssignedToClass($teacherId, $student->classroom_id);
+        \Illuminate\Support\Facades\Log::info("DEBUG: Class teacher check", ['result' => $isClassTeacher, 'class_id' => $student->classroom_id]);
         
         if (!$isClassTeacher) {
             return false;
         }
 
         // Check if the subject is taught in this classroom
-        $subjectInClass = $student->classroom->subjects()->where('subject_id', $subjectId)->exists();
+        $subjectInClass = $student->classroom->subjects()->where('subjects.id', $subjectId)->exists();
+        \Illuminate\Support\Facades\Log::info("DEBUG: Subject in class check", ['result' => $subjectInClass, 'subject_id' => $subjectId]);
         
         return $subjectInClass;
     }
@@ -146,7 +153,7 @@ class ClassTeacherService
         }
 
         // Check direct subject assignment first
-        if ($teacher->subjects()->where('subject_id', $subjectId)->exists()) {
+        if ($teacher->subjects()->where('subjects.id', $subjectId)->exists()) {
             return 'subject_assignment';
         }
 
@@ -154,7 +161,7 @@ class ClassTeacherService
         $student = \App\Models\Student::with('classroom')->find($studentId);
         if ($student && $student->classroom) {
             $isClassTeacher = $this->isTeacherAssignedToClass($teacherId, $student->classroom_id);
-            $subjectInClass = $student->classroom->subjects()->where('subject_id', $subjectId)->exists();
+            $subjectInClass = $student->classroom->subjects()->where('subjects.id', $subjectId)->exists();
             
             if ($isClassTeacher && $subjectInClass) {
                 return 'class_assignment';
@@ -175,29 +182,29 @@ class ClassTeacherService
             return collect();
         }
 
-        // Get teacher's directly assigned subjects
-        $assignedSubjects = $teacher->subjects;
+        // Get classroom subjects to filter against
+        $classroomSubjects = $this->getClassroomSubjects($classroomId);
+        $classroomSubjectIds = $classroomSubjects->pluck('id');
 
-        // If teacher is assigned to this class, add all classroom subjects
+        // If teacher is assigned to this class as Class Teacher, they can manage ALL classroom subjects
         if ($this->isTeacherAssignedToClass($teacherId, $classroomId)) {
-            $classroomSubjects = $this->getClassroomSubjects($classroomId);
-            
-            // Merge and remove duplicates
-            $allSubjects = $assignedSubjects->merge($classroomSubjects)->unique('id');
-            
-            return $allSubjects->map(function ($subject) use ($assignedSubjects) {
-                $subject->permission_type = $assignedSubjects->contains('id', $subject->id) 
+            return $classroomSubjects->map(function ($subject) use ($teacher) {
+                $subject->permission_type = $teacher->subjects->contains('id', $subject->id) 
                     ? 'subject_assignment' 
                     : 'class_assignment';
                 return $subject;
             });
         }
 
-        // If not a class teacher, return only assigned subjects
-        return $assignedSubjects->map(function ($subject) {
+        // If not a Class Teacher, return only the teacher's assigned subjects that are ALSO in this classroom
+        $assignedSubjectsInClassroom = $teacher->subjects->filter(function ($subject) use ($classroomSubjectIds) {
+            return $classroomSubjectIds->contains($subject->id);
+        });
+
+        return $assignedSubjectsInClassroom->map(function ($subject) {
             $subject->permission_type = 'subject_assignment';
             return $subject;
-        });
+        })->values();
     }
 
     /**

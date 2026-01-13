@@ -1,16 +1,19 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Card, PageHeader } from '@/Components/UI';
 import { useState } from 'react';
-import { 
+import {
     EyeIcon,
     DocumentArrowDownIcon,
     ChartBarIcon,
     CalendarIcon,
-    ArrowTrendingUpIcon
+    ArrowTrendingUpIcon,
+    ClockIcon,
+    CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
-export default function Index({ results_by_term, terms, subjects, filters, student }) {
+export default function Index({ results_by_term, terms, current_term, subjects, filters, student }) {
+    const [showAllTerms, setShowAllTerms] = useState(filters?.show_all || false);
     const [selectedTerm, setSelectedTerm] = useState(filters?.term_id || '');
 
     const getGrade = (score) => {
@@ -23,16 +26,16 @@ export default function Index({ results_by_term, terms, subjects, filters, stude
 
     const calculateTermStats = (results) => {
         if (!results || results.length === 0) return null;
-        
+
         // Filter out any null or undefined scores and convert to numbers
         const validScores = results
             .map(r => parseFloat(r.total_score))
             .filter(score => !isNaN(score) && score !== null);
-            
+
         if (validScores.length === 0) return null;
-        
+
         const totalScore = validScores.reduce((a, b) => a + b, 0);
-        
+
         return {
             total_subjects: results.length,
             valid_subjects: validScores.length,
@@ -45,10 +48,34 @@ export default function Index({ results_by_term, terms, subjects, filters, stude
         };
     };
 
+    // Handle term filter change
+    const handleTermChange = (termId) => {
+        setSelectedTerm(termId);
+        router.get(route('student.results.index'), {
+            term_id: termId,
+            show_all: false
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    // Toggle show all terms
+    const handleShowAllTerms = () => {
+        const newShowAll = !showAllTerms;
+        setShowAllTerms(newShowAll);
+        router.get(route('student.results.index'), {
+            show_all: newShowAll
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="My Results" />
-            
+
             <div className="space-y-6">
                 <PageHeader
                     title="My Academic Results"
@@ -82,6 +109,81 @@ export default function Index({ results_by_term, terms, subjects, filters, stude
                         <div>
                             <h3 className="text-sm font-medium text-gray-500">Academic Session</h3>
                             <p className="text-lg font-semibold text-gray-900">{student.classroom?.academic_session?.name || '2024/2025'}</p>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Term Filter Controls */}
+                <Card>
+                    <div className="p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-2">
+                                    <CalendarIcon className="h-5 w-5 text-gray-400" />
+                                    <span className="text-sm font-medium text-gray-700">View Results:</span>
+                                </div>
+
+                                {/* Current Term Badge */}
+                                {current_term && (
+                                    <div className="flex items-center">
+                                        <button
+                                            onClick={() => handleTermChange(current_term.id)}
+                                            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all ${selectedTerm == current_term.id && !showAllTerms
+                                                    ? 'bg-green-100 text-green-800 ring-2 ring-green-500'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-green-50'
+                                                }`}
+                                        >
+                                            <CheckCircleIcon className="h-4 w-4 mr-1" />
+                                            Current Term
+                                            <span className="ml-1 text-xs opacity-75">
+                                                ({current_term.name})
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Show All Toggle */}
+                                <button
+                                    onClick={handleShowAllTerms}
+                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all ${showAllTerms
+                                            ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-500'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-blue-50'
+                                        }`}
+                                >
+                                    <ClockIcon className="h-4 w-4 mr-1" />
+                                    All Terms
+                                </button>
+                            </div>
+
+                            {/* Previous Terms Dropdown */}
+                            {terms.length > 0 && (
+                                <div className="flex items-center space-x-2">
+                                    <label className="text-sm text-gray-600">Select Term:</label>
+                                    <select
+                                        value={selectedTerm}
+                                        onChange={(e) => handleTermChange(e.target.value)}
+                                        className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    >
+                                        <option value="">-- Select a term --</option>
+                                        {terms.map(term => (
+                                            <option key={term.id} value={term.id}>
+                                                {term.name} - {(term.academicSession || term.academic_session)?.name}
+                                                {current_term?.id === term.id ? ' (Current)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Info message */}
+                        <div className="mt-3 text-xs text-gray-500">
+                            {showAllTerms
+                                ? '📊 Showing results from all available terms'
+                                : current_term && selectedTerm == current_term.id
+                                    ? '✅ Showing current term results only. Click "All Terms" to view previous results.'
+                                    : '📅 Viewing specific term results. Select "Current Term" to go back.'
+                            }
                         </div>
                     </div>
                 </Card>
@@ -132,11 +234,11 @@ export default function Index({ results_by_term, terms, subjects, filters, stude
                     {Object.entries(results_by_term).map(([termName, results]) => {
                         const stats = calculateTermStats(results);
                         const averageGrade = stats ? getGrade(stats.average_score) : null;
-                        
+
                         // Performance analysis
                         const strongSubjects = results.filter(r => r.total_score >= 70).length;
                         const improvementNeeded = results.filter(r => r.total_score < 50).length;
-                        
+
                         return (
                             <Card key={termName}>
                                 <div className="flex justify-between items-start mb-6">
@@ -237,7 +339,7 @@ export default function Index({ results_by_term, terms, subjects, filters, stude
                                                 // Sort results by total_score to calculate position
                                                 const sortedResults = [...results].sort((a, b) => b.total_score - a.total_score);
                                                 const position = sortedResults.findIndex(r => r.id === result.id) + 1;
-                                                
+
                                                 return (
                                                     <tr key={result.id} className="hover:bg-gray-50">
                                                         <td className="px-6 py-4 whitespace-nowrap">

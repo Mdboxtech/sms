@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
 
 export default function useNotifications() {
+    const { auth } = usePage().props;
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState([]);
 
     const fetchNotifications = async () => {
+        // Don't fetch if user is not authenticated
+        if (!auth?.user) {
+            return;
+        }
+
         try {
             const response = await fetch('/api/notifications/unread');
             if (response.ok) {
@@ -18,13 +25,16 @@ export default function useNotifications() {
     };
 
     useEffect(() => {
-        fetchNotifications();
-        
-        // Poll for new notifications every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000);
-        
-        return () => clearInterval(interval);
-    }, []);
+        // Only fetch if authenticated
+        if (auth?.user) {
+            fetchNotifications();
+
+            // Poll for new notifications every 30 seconds
+            const interval = setInterval(fetchNotifications, 30000);
+
+            return () => clearInterval(interval);
+        }
+    }, [auth?.user]);
 
     const markAsRead = async (notificationId) => {
         try {
@@ -35,7 +45,7 @@ export default function useNotifications() {
                     'Content-Type': 'application/json',
                 },
             });
-            
+
             // Update local state
             setNotifications(prev => prev.filter(n => n.id !== notificationId));
             setUnreadCount(prev => Math.max(0, prev - 1));
@@ -53,7 +63,7 @@ export default function useNotifications() {
                     'Content-Type': 'application/json',
                 },
             });
-            
+
             setNotifications([]);
             setUnreadCount(0);
         } catch (error) {

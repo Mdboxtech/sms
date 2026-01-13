@@ -5,9 +5,9 @@ import DataTable from '@/Components/DataTable';
 import { debounce } from 'lodash';
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import { 
-    PlusIcon, 
-    PencilIcon, 
+import {
+    PlusIcon,
+    PencilIcon,
     EyeIcon,
     TrashIcon,
     FunnelIcon,
@@ -20,7 +20,7 @@ import Dropdown from '@/Components/Dropdown';
 
 export default function Index({ results, subjects, classrooms, terms, filters }) {
     const [showFilters, setShowFilters] = useState(false);
-    
+
     const { data, setData, get, processing } = useForm({
         subject_id: filters?.subject_id || '',
         classroom_id: filters?.classroom_id || '',
@@ -40,7 +40,7 @@ export default function Index({ results, subjects, classrooms, terms, filters })
         setData(name, value);
         debouncedApplyFilters();
     };
-    
+
     const applyFilters = (e) => {
         e?.preventDefault();
         router.get(route('teacher.results.index'), data, {
@@ -48,7 +48,7 @@ export default function Index({ results, subjects, classrooms, terms, filters })
             preserveScroll: true,
         });
     };
-    
+
     const resetFilters = () => {
         setData({
             subject_id: '',
@@ -57,13 +57,13 @@ export default function Index({ results, subjects, classrooms, terms, filters })
         });
         get(route('teacher.results.index'));
     };
-    
+
     const deleteResult = (resultId) => {
         if (confirm('Are you sure you want to delete this result?')) {
             router.delete(route('teacher.results.destroy', resultId));
         }
     };
-    
+
     const getGrade = (score) => {
         if (score >= 70) return { grade: 'A', remark: 'Excellent', color: 'text-green-600' };
         if (score >= 60) return { grade: 'B', remark: 'Very Good', color: 'text-green-500' };
@@ -75,51 +75,52 @@ export default function Index({ results, subjects, classrooms, terms, filters })
     const columns = [
         {
             header: 'Student',
-            accessorKey: 'student',
-            cell: ({ row }) => (
+            accessor: 'student',
+            render: (row) => (
                 <div>
                     <div className="font-medium text-gray-900">
-                        {row.original.student.user.name}
+                        {row.student.user.name}
                     </div>
                     <div className="text-sm text-gray-500">
-                        {row.original.student.admission_number}
+                        {row.student.admission_number}
                     </div>
                     <div className="text-sm text-gray-500">
-                        {row.original.student.classroom?.name}
+                        {row.student.classroom?.name}
                     </div>
                 </div>
             ),
         },
         {
             header: 'Subject',
-            accessorKey: 'subject.name',
+            accessor: 'subject.name',
+            render: (row) => row.subject?.name || '-',
         },
         {
             header: 'Term',
-            accessorKey: 'term',
-            cell: ({ row }) => (
+            accessor: 'term',
+            render: (row) => (
                 <div>
-                    <div className="font-medium">{row.original.term.name}</div>
+                    <div className="font-medium">{row.term.name}</div>
                     <div className="text-sm text-gray-500">
-                        {row.original.term.academic_session?.name}
+                        {row.term.academic_session?.name}
                     </div>
                 </div>
             ),
         },
         {
             header: 'Scores',
-            accessorKey: 'scores',
-            cell: ({ row }) => {
-                const gradeInfo = getGrade(row.original.total_score);
+            accessor: 'scores',
+            render: (row) => {
+                const gradeInfo = getGrade(row.total_score);
                 return (
                     <div>
                         <div className="flex space-x-2 text-sm">
-                            <span>CA: {row.original.ca_score}</span>
-                            <span>Exam: {row.original.exam_score}</span>
+                            <span>CA: {row.ca_score}</span>
+                            <span>Exam: {row.exam_score}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                             <span className="font-bold">
-                                Total: {row.original.total_score}
+                                Total: {row.total_score}
                             </span>
                             <span className={`px-2 py-1 text-xs rounded-full ${gradeInfo.color} bg-gray-100`}>
                                 {gradeInfo.grade}
@@ -131,17 +132,17 @@ export default function Index({ results, subjects, classrooms, terms, filters })
         },
         {
             header: 'Actions',
-            accessorKey: 'actions',
-            cell: ({ row }) => (
+            accessor: 'actions',
+            render: (row) => (
                 <div className="flex items-center space-x-2">
                     <Link
-                        href={route('teacher.results.edit', row.original.id)}
+                        href={route('teacher.results.edit', row.id)}
                         className="text-blue-600 hover:text-blue-900"
                     >
                         <PencilIcon className="h-4 w-4" />
                     </Link>
                     <button
-                        onClick={() => deleteResult(row.original.id)}
+                        onClick={() => deleteResult(row.id)}
                         className="text-red-600 hover:text-red-900"
                     >
                         <TrashIcon className="h-4 w-4" />
@@ -154,7 +155,7 @@ export default function Index({ results, subjects, classrooms, terms, filters })
     return (
         <AuthenticatedLayout>
             <Head title="My Results" />
-            
+
             <div className="space-y-6">
                 <PageHeader
                     title="My Results"

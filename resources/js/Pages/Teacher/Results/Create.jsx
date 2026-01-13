@@ -7,8 +7,10 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 export default function Create({ subjects, students, classrooms, terms, selected_classroom }) {
     const [availableStudents, setAvailableStudents] = useState(students || []);
+    const [availableSubjects, setAvailableSubjects] = useState(subjects || []);
     const [selectedClassroom, setSelectedClassroom] = useState(selected_classroom || '');
-    
+    const [isLoadingData, setIsLoadingData] = useState(false);
+
     const { data, setData, post, processing, errors, reset } = useForm({
         student_id: '',
         subject_id: '',
@@ -18,19 +20,30 @@ export default function Create({ subjects, students, classrooms, terms, selected
         generate_remark: false
     });
 
-    // Fetch students when classroom changes
+    // Fetch students and subjects when classroom changes
     useEffect(() => {
         if (selectedClassroom) {
+            setIsLoadingData(true);
             axios.get(route('teacher.results.classroom.students', { classroom: selectedClassroom }))
                 .then(response => {
-                    setAvailableStudents(response.data);
+                    const { students, subjects } = response.data;
+                    setAvailableStudents(students || []);
+                    setAvailableSubjects(subjects || []);
                 })
                 .catch(error => {
-                    console.error('Error fetching students:', error);
+                    console.error('Error fetching data:', error);
                     setAvailableStudents([]);
+                    setAvailableSubjects([]);
+                })
+                .finally(() => {
+                    setIsLoadingData(false);
                 });
         } else {
             setAvailableStudents([]);
+            // Reset to initial subjects if no classroom selected, or empty? 
+            // Better to keep empty or initial? Let's keep initial or empty. 
+            // Assuming empty is safer to force selection.
+            setAvailableSubjects(subjects || []);
         }
     }, [selectedClassroom]);
 
@@ -58,7 +71,7 @@ export default function Create({ subjects, students, classrooms, terms, selected
     return (
         <AuthenticatedLayout>
             <Head title="Add Result" />
-            
+
             <div className="space-y-6">
                 <PageHeader
                     title="Add New Result"
@@ -106,12 +119,12 @@ export default function Create({ subjects, students, classrooms, terms, selected
                                         <select
                                             value={data.student_id}
                                             onChange={(e) => setData('student_id', e.target.value)}
-                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                                errors.student_id ? 'border-red-500' : ''
-                                            }`}
+                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.student_id ? 'border-red-500' : ''
+                                                }`}
                                             required
+                                            disabled={isLoadingData}
                                         >
-                                            <option value="">Select student...</option>
+                                            <option value="">{isLoadingData ? 'Loading students...' : 'Select student...'}</option>
                                             {availableStudents.map((student) => (
                                                 <option key={student.id} value={student.id}>
                                                     {student.user.name} ({student.admission_number})
@@ -131,13 +144,13 @@ export default function Create({ subjects, students, classrooms, terms, selected
                                         <select
                                             value={data.subject_id}
                                             onChange={(e) => setData('subject_id', e.target.value)}
-                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                                errors.subject_id ? 'border-red-500' : ''
-                                            }`}
+                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.subject_id ? 'border-red-500' : ''
+                                                }`}
                                             required
+                                            disabled={isLoadingData}
                                         >
-                                            <option value="">Select subject...</option>
-                                            {subjects.map((subject) => (
+                                            <option value="">{isLoadingData ? 'Loading subjects...' : 'Select subject...'}</option>
+                                            {availableSubjects.map((subject) => (
                                                 <option key={subject.id} value={subject.id}>
                                                     {subject.name}
                                                 </option>
@@ -156,9 +169,8 @@ export default function Create({ subjects, students, classrooms, terms, selected
                                         <select
                                             value={data.term_id}
                                             onChange={(e) => setData('term_id', e.target.value)}
-                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                                errors.term_id ? 'border-red-500' : ''
-                                            }`}
+                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.term_id ? 'border-red-500' : ''
+                                                }`}
                                             required
                                         >
                                             <option value="">Select term...</option>
@@ -185,9 +197,8 @@ export default function Create({ subjects, students, classrooms, terms, selected
                                             step="0.01"
                                             value={data.ca_score}
                                             onChange={(e) => setData('ca_score', e.target.value)}
-                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                                errors.ca_score ? 'border-red-500' : ''
-                                            }`}
+                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.ca_score ? 'border-red-500' : ''
+                                                }`}
                                             required
                                         />
                                         {errors.ca_score && (
@@ -207,9 +218,8 @@ export default function Create({ subjects, students, classrooms, terms, selected
                                             step="0.01"
                                             value={data.exam_score}
                                             onChange={(e) => setData('exam_score', e.target.value)}
-                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                                errors.exam_score ? 'border-red-500' : ''
-                                            }`}
+                                            className={`w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.exam_score ? 'border-red-500' : ''
+                                                }`}
                                             required
                                         />
                                         {errors.exam_score && (

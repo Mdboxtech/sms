@@ -43,11 +43,10 @@ import {
     TestTube
 } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, setIsOpen }) {
     const { auth, appSettings, url, themeSettings } = usePage().props;
     const { unreadCount } = useNotifications();
     const { unreadMessagesCount } = useMessages();
-    const [isOpen, setIsOpen] = useState(true);
     const [hoveredItem, setHoveredItem] = useState(null);
     const [manuallyOpenedMenus, setManuallyOpenedMenus] = useState({});
     const [openMenus, setOpenMenus] = useState(() => {
@@ -64,20 +63,6 @@ export default function Sidebar() {
     const primaryStart = themeSettings?.primary_start || '#6366f1';
     const primaryEnd = themeSettings?.primary_end || '#8b5cf6';
     const accentColor = themeSettings?.accent_color || '#10b981';
-
-    // Auto-collapse on mobile
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 768) {
-                setIsOpen(false);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        handleResize(); // Check on initial load
-
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     // Auto-expand menus with active children and auto-close menus without active children
     useEffect(() => {
@@ -364,12 +349,12 @@ export default function Sidebar() {
                         onMouseEnter={() => setHoveredItem(item.name)}
                         onMouseLeave={() => setHoveredItem(null)}
                         className={`w-full group relative flex items-center justify-between p-3 rounded-xl font-medium transition-all duration-200 ${hasActiveChild
-                                ? 'bg-gray-50 text-gray-900 border-l-4'
-                                : isMenuOpen
+                            ? 'bg-gray-50 text-gray-900 border-l-4'
+                            : isMenuOpen
+                                ? 'bg-gray-50 text-gray-900'
+                                : hoveredItem === item.name
                                     ? 'bg-gray-50 text-gray-900'
-                                    : hoveredItem === item.name
-                                        ? 'bg-gray-50 text-gray-900'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                             }`}
                         style={hasActiveChild ? activeBorderStyle : {}}
                     >
@@ -433,10 +418,10 @@ export default function Sidebar() {
                                         onMouseEnter={() => setHoveredItem(child.name)}
                                         onMouseLeave={() => setHoveredItem(null)}
                                         className={`group flex items-center space-x-3 p-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative ${isChildActive
-                                                ? 'border-l-4 font-semibold'
-                                                : hoveredItem === child.name
-                                                    ? 'bg-gray-50 text-gray-700'
-                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                            ? 'border-l-4 font-semibold'
+                                            : hoveredItem === child.name
+                                                ? 'bg-gray-50 text-gray-700'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                             }`}
                                         style={isChildActive ? { ...activeBgStyle, ...activeBorderStyle, color: primaryStart } : {}}
                                     >
@@ -477,10 +462,10 @@ export default function Sidebar() {
                 onMouseEnter={() => setHoveredItem(item.name)}
                 onMouseLeave={() => setHoveredItem(null)}
                 className={`group flex items-center space-x-3 p-3 rounded-xl font-medium transition-all duration-200 relative ${isActive
-                        ? 'border-l-4 font-semibold'
-                        : hoveredItem === item.name
-                            ? 'bg-gray-50 text-gray-700'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'border-l-4 font-semibold'
+                    : hoveredItem === item.name
+                        ? 'bg-gray-50 text-gray-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                 style={isActive ? { ...activeBgStyle, ...activeBorderStyle, color: primaryStart } : {}}
             >
@@ -531,165 +516,172 @@ export default function Sidebar() {
     };
 
     return (
-        <div
-            className={`flex flex-col h-screen ${isOpen ? 'w-72' : 'w-20'} bg-white border-r border-gray-200/50 shadow-xl transition-all duration-300 ease-in-out relative overflow-auto`}
-        >
-            {/* Background Pattern - uses theme colors */}
-            <div className="absolute inset-0 opacity-30">
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background: `linear-gradient(135deg, ${primaryStart}08 0%, transparent 50%, ${primaryEnd}08 100%)`
-                    }}
-                />
-                <div
-                    className="absolute top-0 left-0 w-full h-full"
-                    style={{
-                        background: `radial-gradient(circle at 50% 50%, ${primaryStart}10, transparent 50%)`
-                    }}
-                />
-            </div>
-
-            {/* Header */}
-            <div className="relative z-10 flex items-center justify-between p-6 border-b border-gray-200/50 bg-white/70 backdrop-blur-sm">
-                <div className={`flex items-center space-x-3 transition-all duration-300 ${!isOpen && 'justify-center'}`}>
-                    <div className="relative">
-                        {isOpen && (<ApplicationLogo className="w-10 h-10 drop-shadow-md" />)}
-                        <div
-                            className="absolute inset-0 rounded-lg blur-lg opacity-20 -z-10"
-                            style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
-                        />
-                    </div>
-                    {isOpen && (
-                        <div className="flex flex-col">
-                            <span className="font-bold text-xl text-gray-900 tracking-tight">
-                                {appSettings?.school_name?.split(' ').slice(0, 2).join(' ') || 'SMS'}
-                            </span>
-                            {appSettings?.school_tagline && (
-                                <span className="text-xs text-gray-500 font-medium">
-                                    {appSettings.school_tagline}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="p-2 rounded-xl hover:bg-white/80 text-gray-600 transition-all duration-200 hover:shadow-md group border border-gray-200/50"
-                >
-                    {isOpen ? (
-                        <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                    ) : (
-                        <Menu className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                    )}
-                </button>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex-1 flex flex-col relative z-10 bg-gradient-to-b from-transparent to-white/30">
-                <nav className="flex-1 space-y-2 p-4">
-                    {navigation.map((item) => (
-                        <NavItem key={item.name} item={item} />
-                    ))}
-                </nav>
-
-                {/* User Profile Section */}
-                <div className="p-4 border-t border-gray-200/50 bg-white/70 backdrop-blur-sm">
-                    {/* User Profile */}
-                    {isOpen ? (
-                        <div
-                            className="flex items-center space-x-3 p-3 rounded-xl border border-gray-200/50 shadow-sm hover:shadow-md transition-all duration-200"
-                            style={{ background: `linear-gradient(135deg, #f9fafb, ${primaryStart}08)` }}
-                        >
-                            <div className="relative">
-                                <div
-                                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
-                                    style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
-                                >
-                                    {auth.user.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div
-                                    className="absolute inset-0 rounded-full blur-md opacity-20 -z-10"
-                                    style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
-                                />
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 text-sm truncate">{auth.user.name}</p>
-                                <p className="text-xs text-gray-500 capitalize">{auth.user.role.name}</p>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                                <Link
-                                    href={route('profile.edit')}
-                                    className="p-1.5 rounded-lg text-gray-400 transition-all duration-200"
-                                    style={{ ':hover': { backgroundColor: `${primaryStart}20`, color: primaryStart } }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${primaryStart}20`; e.currentTarget.style.color = primaryStart; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#9ca3af'; }}
-                                >
-                                    <User className="w-4 h-4" />
-                                </Link>
-                                <Link
-                                    href={route('logout')}
-                                    method="post"
-                                    className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all duration-200"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Link>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col space-y-2 items-center">
-                            <div className="relative">
-                                <div
-                                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
-                                    style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
-                                >
-                                    {auth.user.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div
-                                    className="absolute inset-0 rounded-full blur-md opacity-20 -z-10"
-                                    style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
-                                />
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                            </div>
-                            <div className="flex space-x-1">
-                                <Link
-                                    href={route('profile.edit')}
-                                    className="p-1.5 rounded-lg text-gray-400 transition-all duration-200"
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${primaryStart}20`; e.currentTarget.style.color = primaryStart; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#9ca3af'; }}
-                                >
-                                    <User className="w-4 h-4" />
-                                </Link>
-                                <Link
-                                    href={route('logout')}
-                                    method="post"
-                                    className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all duration-200"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Link>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Footer branding */}
-                    {isOpen && (
-                        <div className="mt-4 text-center">
-                            <p className="text-xs text-gray-400 font-medium">
-                                Powered by SMS v2.0
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Mobile overlay */}
+        <>
+            {/* Mobile overlay backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden z-[-1]"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
                     onClick={() => setIsOpen(false)}
-                ></div>
+                />
             )}
-        </div>
+
+            <div
+                className={`
+                    flex flex-col h-screen bg-white border-r border-gray-200/50 shadow-xl transition-all duration-300 ease-in-out relative overflow-auto
+                    ${isOpen ? 'w-72' : 'w-20'}
+                    fixed md:relative z-50 md:z-0
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                `}
+            >
+                {/* Background Pattern - uses theme colors */}
+                <div className="absolute inset-0 opacity-30">
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: `linear-gradient(135deg, ${primaryStart}08 0%, transparent 50%, ${primaryEnd}08 100%)`
+                        }}
+                    />
+                    <div
+                        className="absolute top-0 left-0 w-full h-full"
+                        style={{
+                            background: `radial-gradient(circle at 50% 50%, ${primaryStart}10, transparent 50%)`
+                        }}
+                    />
+                </div>
+
+                {/* Header */}
+                <div className="relative z-10 flex items-center justify-between p-6 border-b border-gray-200/50 bg-white/70 backdrop-blur-sm">
+                    <div className={`flex items-center space-x-3 transition-all duration-300 ${!isOpen && 'justify-center'}`}>
+                        <div className="relative">
+                            {isOpen && (<ApplicationLogo className="w-10 h-10 drop-shadow-md" />)}
+                            <div
+                                className="absolute inset-0 rounded-lg blur-lg opacity-20 -z-10"
+                                style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
+                            />
+                        </div>
+                        {isOpen && (
+                            <div className="flex flex-col">
+                                <span className="font-bold text-xl text-gray-900 tracking-tight">
+                                    {appSettings?.school_name?.split(' ').slice(0, 2).join(' ') || 'SMS'}
+                                </span>
+                                {appSettings?.school_tagline && (
+                                    <span className="text-xs text-gray-500 font-medium">
+                                        {appSettings.school_tagline}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="p-2 rounded-xl hover:bg-white/80 text-gray-600 transition-all duration-200 hover:shadow-md group border border-gray-200/50"
+                    >
+                        {isOpen ? (
+                            <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                        ) : (
+                            <Menu className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                        )}
+                    </button>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex-1 flex flex-col relative z-10 bg-gradient-to-b from-transparent to-white/30">
+                    <nav className="flex-1 space-y-2 p-4">
+                        {navigation.map((item) => (
+                            <NavItem key={item.name} item={item} />
+                        ))}
+                    </nav>
+
+                    {/* User Profile Section */}
+                    <div className="p-4 border-t border-gray-200/50 bg-white/70 backdrop-blur-sm">
+                        {/* User Profile */}
+                        {isOpen ? (
+                            <div
+                                className="flex items-center space-x-3 p-3 rounded-xl border border-gray-200/50 shadow-sm hover:shadow-md transition-all duration-200"
+                                style={{ background: `linear-gradient(135deg, #f9fafb, ${primaryStart}08)` }}
+                            >
+                                <div className="relative">
+                                    <div
+                                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
+                                        style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
+                                    >
+                                        {auth.user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div
+                                        className="absolute inset-0 rounded-full blur-md opacity-20 -z-10"
+                                        style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
+                                    />
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 text-sm truncate">{auth.user.name}</p>
+                                    <p className="text-xs text-gray-500 capitalize">{auth.user.role.name}</p>
+                                </div>
+                                <div className="flex flex-col space-y-1">
+                                    <Link
+                                        href={route('profile.edit')}
+                                        className="p-1.5 rounded-lg text-gray-400 transition-all duration-200"
+                                        style={{ ':hover': { backgroundColor: `${primaryStart}20`, color: primaryStart } }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${primaryStart}20`; e.currentTarget.style.color = primaryStart; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#9ca3af'; }}
+                                    >
+                                        <User className="w-4 h-4" />
+                                    </Link>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all duration-200"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col space-y-2 items-center">
+                                <div className="relative">
+                                    <div
+                                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
+                                        style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
+                                    >
+                                        {auth.user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div
+                                        className="absolute inset-0 rounded-full blur-md opacity-20 -z-10"
+                                        style={{ background: `linear-gradient(135deg, ${primaryStart}, ${primaryEnd})` }}
+                                    />
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                                </div>
+                                <div className="flex space-x-1">
+                                    <Link
+                                        href={route('profile.edit')}
+                                        className="p-1.5 rounded-lg text-gray-400 transition-all duration-200"
+                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${primaryStart}20`; e.currentTarget.style.color = primaryStart; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#9ca3af'; }}
+                                    >
+                                        <User className="w-4 h-4" />
+                                    </Link>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all duration-200"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Footer branding */}
+                        {isOpen && (
+                            <div className="mt-4 text-center">
+                                <p className="text-xs text-gray-400 font-medium">
+                                    Powered by SMS v2.0
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </>
     );
 }
