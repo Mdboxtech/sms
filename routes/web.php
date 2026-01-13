@@ -86,6 +86,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('students', StudentController::class);
         Route::resource('teachers', TeacherController::class);
 
+        // ID Cards
+        Route::prefix('id-cards')->name('id-cards.')->group(function () {
+            Route::get('/', [IdCardController::class, 'index'])->name('index');
+            Route::post('/template', [IdCardController::class, 'saveTemplate'])->name('save-template');
+            Route::get('/users', [IdCardController::class, 'getUsers'])->name('users');
+        });
+
         Route::post('/teachers/assign/subject', [TeacherController::class, 'assignSubject'])->name('teachers.assign.subject');
         Route::post('/teachers/assign/classroom', [TeacherController::class, 'assignClassroom'])->name('teachers.assign.classroom');
         Route::post('/teachers/remove/subject', [TeacherController::class, 'removeSubject'])->name('teachers.remove.subject');
@@ -190,12 +197,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/optimize', [SettingsController::class, 'optimizeSystem'])->name('optimize');
             Route::post('/reset-corrupted', [SettingsController::class, 'resetCorruptedSettings'])->name('reset.corrupted'); // Kept existing route
 
-            // ID Cards
-            Route::prefix('id-cards')->name('id-cards.')->group(function () {
-                Route::get('/', [IdCardController::class, 'index'])->name('index');
-                Route::post('/template', [IdCardController::class, 'saveTemplate'])->name('save-template');
-                Route::get('/users', [IdCardController::class, 'getUsers'])->name('users');
-            });
+
             
             // Payment Settings
             Route::get('/payment', [SettingsController::class, 'paymentSettings'])->name('payment');
