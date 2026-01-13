@@ -282,19 +282,19 @@ export default function Settings({
                 {/* Tabs */}
                 <Card>
                     <div className="border-b border-gray-200">
-                        <nav className="-mb-px flex space-x-8">
+                        <nav className="-mb-px flex overflow-x-auto scrollbar-hide space-x-2 sm:space-x-4 md:space-x-8 px-1">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 return (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
+                                        className={`py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
                                             ? 'border-indigo-500 text-indigo-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                             }`}
                                     >
-                                        <Icon className="h-5 w-5" />
+                                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                                         <span>{tab.name}</span>
                                     </button>
                                 );
