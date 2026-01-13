@@ -40,14 +40,18 @@ export default function AuthenticatedLayout({ children }) {
 
     return (
         <AppWrapper>
-            <div className="flex h-screen bg-gray-100 overflow-hidden">
-                <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+            <div className="flex h-screen bg-gray-100 overflow-hidden print:block print:h-auto print:overflow-visible print:bg-white">
+                <div className="print:hidden">
+                    <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+                </div>
 
-                <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-                    <Header onMenuClick={() => setSidebarOpen(true)} />
+                <div className="flex-1 flex flex-col overflow-hidden min-w-0 print:block print:overflow-visible">
+                    <div className="print:hidden">
+                        <Header onMenuClick={() => setSidebarOpen(true)} />
+                    </div>
 
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
-                        <div className="max-w-7xl mx-auto w-full">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 print:p-0 print:overflow-visible">
+                        <div className="max-w-7xl mx-auto w-full print:max-w-none">
                             {children}
                         </div>
                     </main>

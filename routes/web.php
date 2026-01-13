@@ -92,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/', [IdCardController::class, 'index'])->name('index');
             Route::post('/template', [IdCardController::class, 'saveTemplate'])->name('save-template');
             Route::get('/users', [IdCardController::class, 'getUsers'])->name('users');
+            Route::post('/upload-photo', [IdCardController::class, 'uploadPhoto'])->name('upload-photo');
         });
 
         Route::post('/teachers/assign/subject', [TeacherController::class, 'assignSubject'])->name('teachers.assign.subject');

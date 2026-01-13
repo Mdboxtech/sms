@@ -20,24 +20,32 @@ export default function IdCardTemplate({ user, settings, type }) {
 
     // Derived values
     const primaryColor = theme_color;
-    // Lighter version of primary color for background accents
-    const lightPrimaryColor = `${primaryColor}10`; // 10% opacity hex
+    const lightPrimaryColor = `${primaryColor}10`;
 
-    // User data handling
+    // User data handling - prioritize passport_photo from DB
     const userName = user?.name || user?.user?.name || 'Student Name';
-    const userId = user?.admission_number || user?.staff_id || 'ID-000000';
-    const userRole = type === 'student' ? (user?.classroom?.name || 'Class') : 'Staff Member';
-    const userPhoto = user?.photo_path || user?.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
+    const userId = user?.admission_number || user?.student?.admission_number || user?.staff_id || 'ID-000000';
+    const userRole = type === 'student'
+        ? (user?.classroom?.name || user?.student?.classroom?.name || 'Class')
+        : 'Staff Member';
+
+    // Photo priority: passport_photo > fallback to initials
+    const userPhoto = user?.passport_photo ||
+        user?.student?.passport_photo ||
+        null;
+
+    // Generate initials for placeholder
+    const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
         <div
             className={`
-                relative bg-white shadow-lg overflow-hidden print:shadow-none border border-gray-200 print:border-gray-900
-                ${isPortrait ? 'w-[320px] h-[480px]' : 'w-[480px] h-[320px]'}
+                relative bg-white shadow-lg overflow-hidden print:shadow-none border border-gray-200 print:border-gray-400
+                ${isPortrait ? 'w-[280px] h-[420px]' : 'w-[420px] h-[280px]'}
                 flex flex-col
             `}
             style={{
-                borderColor: 'rgba(0,0,0,0.1)'
+                borderRadius: '12px',
             }}
         >
             {/* Background Pattern */}
@@ -52,30 +60,39 @@ export default function IdCardTemplate({ user, settings, type }) {
 
             {/* Header */}
             <div
-                className={`relative z-10 p-4 text-center text-white`}
+                className={`relative z-10 p-3 text-center text-white`}
                 style={{ backgroundColor: primaryColor }}
             >
-                <h1 className="font-bold text-lg uppercase tracking-wider">{header_text}</h1>
-                <p className="text-xs opacity-90 uppercase tracking-widest">{sub_header_text}</p>
+                <h1 className="font-bold text-sm uppercase tracking-wider">{header_text}</h1>
+                <p className="text-[10px] opacity-90 uppercase tracking-widest">{sub_header_text}</p>
             </div>
 
             {/* Content Module */}
             <div className={`
-                relative z-10 flex-1 p-6 flex 
-                ${isPortrait ? 'flex-col items-center justify-center space-y-4' : 'flex-row items-center justify-between space-x-6'}
+                relative z-10 flex-1 p-4 flex 
+                ${isPortrait ? 'flex-col items-center justify-center space-y-3' : 'flex-row items-center justify-between space-x-4'}
             `}>
                 {/* Photo Section */}
                 {show_photo && (
                     <div className={`${isPortrait ? '' : 'flex-shrink-0'}`}>
                         <div
-                            className="w-32 h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-100"
+                            className="w-24 h-28 rounded-lg border-3 border-white shadow-md overflow-hidden bg-gray-100 flex items-center justify-center"
                             style={{ borderColor: primaryColor }}
                         >
-                            <img
-                                src={userPhoto}
-                                alt={userName}
-                                className="w-full h-full object-cover"
-                            />
+                            {userPhoto ? (
+                                <img
+                                    src={userPhoto}
+                                    alt={userName}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div
+                                    className="w-full h-full flex items-center justify-center text-white font-bold text-2xl"
+                                    style={{ backgroundColor: primaryColor }}
+                                >
+                                    {initials}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -83,15 +100,15 @@ export default function IdCardTemplate({ user, settings, type }) {
                 {/* Info Section */}
                 <div className={`text-center ${isPortrait ? '' : 'flex-1 text-left'}`}>
                     {show_name && (
-                        <div className="mb-2">
-                            <h2 className="text-xl font-bold text-gray-900 leading-tight">{userName}</h2>
+                        <div className="mb-1">
+                            <h2 className="text-base font-bold text-gray-900 leading-tight">{userName}</h2>
                         </div>
                     )}
 
                     {show_role && (
-                        <div className="mb-3">
+                        <div className="mb-2">
                             <span
-                                className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase text-white"
+                                className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase text-white"
                                 style={{ backgroundColor: primaryColor }}
                             >
                                 {userRole}
@@ -100,33 +117,32 @@ export default function IdCardTemplate({ user, settings, type }) {
                     )}
 
                     {show_id && (
-                        <div className="space-y-1">
-                            <p className="text-xs text-gray-500 uppercase font-semibold">ID Number</p>
-                            <p className="text-lg font-mono font-bold text-gray-800 tracking-wider">{userId}</p>
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] text-gray-500 uppercase font-semibold">ID Number</p>
+                            <p className="text-sm font-mono font-bold text-gray-800 tracking-wider">{userId}</p>
                         </div>
                     )}
 
                     {show_expiry && expiry_date && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                            <p className="text-xs text-gray-400 uppercase">Expires</p>
-                            <p className="text-sm font-semibold text-gray-700">{expiry_date}</p>
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                            <p className="text-[10px] text-gray-400 uppercase">Expires</p>
+                            <p className="text-xs font-semibold text-gray-700">{expiry_date}</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Footer / Barcode Placeholder */}
+            {/* Footer / Barcode */}
             <div
-                className="relative z-10 bg-gray-50 p-3 border-t border-gray-100 flex justify-center items-center"
+                className="relative z-10 bg-gray-50 p-2 border-t border-gray-100 flex justify-center items-center"
             >
-                {/* Simple Barcode visual representation */}
-                <div className="h-8 flex space-x-0.5 items-end opacity-70">
-                    {[...Array(30)].map((_, i) => (
+                <div className="h-6 flex space-x-0.5 items-end opacity-70">
+                    {[...Array(25)].map((_, i) => (
                         <div
                             key={i}
                             className="bg-black"
                             style={{
-                                width: Math.random() > 0.5 ? '2px' : '4px',
+                                width: Math.random() > 0.5 ? '1px' : '3px',
                                 height: Math.random() > 0.5 ? '100%' : '70%'
                             }}
                         />

@@ -20,6 +20,7 @@ class Student extends Model
         'parent_name',
         'parent_phone',
         'address',
+        'passport_photo',
     ];
 
     protected $casts = [

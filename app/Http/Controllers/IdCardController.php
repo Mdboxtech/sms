@@ -54,18 +54,54 @@ class IdCardController extends Controller
             }
             $query->with('student.classroom');
         } else {
-            // Assuming teachers have a 'teacher' role or similar. 
-            // For now, let's assume all users who are NOT students are potentially staff/teachers
-            // Or specifically check for a role if your system has spatie/laravel-permission
-            // Adjust this logic based on your specific User/Role model
-             $query->whereDoesntHave('student');
+            // Staff/Teachers
+            $query->whereDoesntHave('student');
         }
 
         if ($request->search) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        return response()->json($query->paginate(20));
+        $users = $query->paginate(20);
+        
+        // Transform data to include passport_photo at top level for easier access
+        $users->getCollection()->transform(function ($user) {
+            $user->passport_photo = $user->student?->passport_photo 
+                ? asset('storage/' . $user->student->passport_photo) 
+                : null;
+            $user->admission_number = $user->student?->admission_number;
+            $user->classroom = $user->student?->classroom;
+            return $user;
+        });
+
+        return response()->json($users);
+    }
+
+    public function uploadPhoto(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $student = Student::findOrFail($request->student_id);
+
+        if ($request->hasFile('photo')) {
+            // Delete old photo if exists
+            if ($student->passport_photo && \Storage::disk('public')->exists($student->passport_photo)) {
+                \Storage::disk('public')->delete($student->passport_photo);
+            }
+
+            // Store new photo
+            $path = $request->file('photo')->store('passport_photos', 'public');
+            $student->passport_photo = $path;
+            $student->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'photo_url' => asset('storage/' . $student->passport_photo),
+        ]);
     }
 
     private function getDefaultTemplate($type)
@@ -82,6 +118,12 @@ class IdCardController extends Controller
             'sub_header_text' => $type === 'student' ? 'Student Identity Card' : 'Staff Identity Card',
             'expiry_date' => '',
             'background_image' => null,
+            // Back side settings
+            'show_back' => true,
+            'back_title' => 'Terms & Conditions',
+            'back_content' => "1. This card is non-transferable.\n2. Report if lost or found.\n3. Must be worn at all times on campus.",
+            'back_contact' => config('app.school_phone', '+1 234 567 890'),
+            'back_address' => config('app.school_address', 'School Address'),
         ];
     }
 }
