@@ -5,11 +5,11 @@ import Card from '@/Components/UI/Card';
 import Button from '@/Components/UI/Button';
 import { Badge } from '@/Components/UI/badge';
 import { Alert, AlertDescription } from '@/Components/UI/alert';
-import { 
-    Clock, 
-    Flag, 
-    ChevronLeft, 
-    ChevronRight, 
+import {
+    Clock,
+    Flag,
+    ChevronLeft,
+    ChevronRight,
     AlertCircle,
     CheckCircle2,
     Circle
@@ -20,29 +20,31 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState({});
     const [flaggedQuestions, setFlaggedQuestions] = useState(new Set());
-    const [timeLeft, setTimeLeft] = useState(timeRemaining);
+    const [timeLeft, setTimeLeft] = useState(timeRemaining || 0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [autoSaveStatus, setAutoSaveStatus] = useState('saved');
     const [lastSavedAnswers, setLastSavedAnswers] = useState({}); // Track what was last saved
     const timerRef = useRef(null);
     const autoSaveRef = useRef(null);
 
-    const questions = exam.questions || [];
-    const currentQuestion = questions[currentQuestionIndex];
+    // Safely get questions array
+    const questions = exam?.questions || [];
+    const currentQuestion = questions.length > 0 ? questions[currentQuestionIndex] : null;
+    const hasValidData = exam && attempt && questions.length > 0;
 
     // Initialize answers and flagged questions from attempt
     useEffect(() => {
-        if (attempt.answers) {
+        if (attempt?.answers) {
             const answersMap = {};
             const flaggedSet = new Set();
-            
+
             attempt.answers.forEach(answer => {
                 answersMap[answer.question_id] = answer.answer_text || answer.selected_option;
                 if (answer.is_flagged) {
                     flaggedSet.add(answer.question_id);
                 }
             });
-            
+
             setAnswers(answersMap);
             setLastSavedAnswers(answersMap); // Initialize what was last saved
             setFlaggedQuestions(flaggedSet);
@@ -74,15 +76,15 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     useEffect(() => {
         const handleBeforeUnload = (event) => {
             // Save current answer if there are unsaved changes
-            if (currentQuestion && 
-                answers[currentQuestion.id] && 
+            if (currentQuestion &&
+                answers[currentQuestion.id] &&
                 answers[currentQuestion.id] !== lastSavedAnswers[currentQuestion.id]) {
                 // Use navigator.sendBeacon for reliable saving on page unload
                 const formData = new FormData();
                 formData.append('question_id', currentQuestion.id);
                 formData.append('answer', answers[currentQuestion.id]);
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
-                
+
                 navigator.sendBeacon(
                     route('student.cbt.exam.answer', attempt.id),
                     formData
@@ -91,7 +93,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
-        
+
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
@@ -107,11 +109,11 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
         // 1. We have a current question and an answer for it
         // 2. The answer is different from what was last saved
         // 3. We're not currently saving
-        if (currentQuestion && 
-            answers[currentQuestion.id] && 
+        if (currentQuestion &&
+            answers[currentQuestion.id] &&
             answers[currentQuestion.id] !== lastSavedAnswers[currentQuestion.id] &&
             autoSaveStatus !== 'saving') {
-            
+
             autoSaveRef.current = setTimeout(() => {
                 saveCurrentAnswer();
             }, 8000); // Increased to 8 seconds for less frequent saves
@@ -128,7 +130,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-        
+
         if (hours > 0) {
             return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         } else {
@@ -137,8 +139,8 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     };
 
     const saveCurrentAnswer = async () => {
-        if (!currentQuestion || 
-            !answers[currentQuestion.id] || 
+        if (!currentQuestion ||
+            !answers[currentQuestion.id] ||
             autoSaveStatus === 'saving' ||
             answers[currentQuestion.id] === lastSavedAnswers[currentQuestion.id]) {
             return;
@@ -181,7 +183,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
 
     const handleAnswerChange = (value) => {
         const previousValue = answers[currentQuestion.id];
-        
+
         // Only update if the value actually changed
         if (previousValue !== value) {
             setAnswers(prev => ({
@@ -197,7 +199,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
 
     const handleFlagQuestion = async () => {
         const isCurrentlyFlagged = flaggedQuestions.has(currentQuestion.id);
-        
+
         try {
             router.post(route('student.cbt.exam.flag', attempt.id), {
                 question_id: currentQuestion.id,
@@ -242,14 +244,14 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     const handleSubmit = () => {
         if (window.confirm('Are you sure you want to submit your exam? This action cannot be undone.')) {
             setIsSubmitting(true);
-            
+
             // Save current answer before submitting
-            if (currentQuestion && 
-                answers[currentQuestion.id] && 
+            if (currentQuestion &&
+                answers[currentQuestion.id] &&
                 answers[currentQuestion.id] !== lastSavedAnswers[currentQuestion.id]) {
                 saveCurrentAnswer();
             }
-            
+
             router.post(route('student.cbt.exam.submit', attempt.id), {}, {
                 onSuccess: (page) => {
                     console.log('Exam submitted successfully');
@@ -265,8 +267,8 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
 
     const goToQuestion = (index) => {
         // Save current answer before changing questions
-        if (currentQuestion && 
-            answers[currentQuestion.id] && 
+        if (currentQuestion &&
+            answers[currentQuestion.id] &&
             answers[currentQuestion.id] !== lastSavedAnswers[currentQuestion.id]) {
             saveCurrentAnswer();
         }
@@ -276,8 +278,8 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     const goToPrevious = () => {
         if (currentQuestionIndex > 0) {
             // Save current answer before changing questions
-            if (currentQuestion && 
-                answers[currentQuestion.id] && 
+            if (currentQuestion &&
+                answers[currentQuestion.id] &&
                 answers[currentQuestion.id] !== lastSavedAnswers[currentQuestion.id]) {
                 saveCurrentAnswer();
             }
@@ -288,8 +290,8 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     const goToNext = () => {
         if (currentQuestionIndex < questions.length - 1) {
             // Save current answer before changing questions
-            if (currentQuestion && 
-                answers[currentQuestion.id] && 
+            if (currentQuestion &&
+                answers[currentQuestion.id] &&
                 answers[currentQuestion.id] !== lastSavedAnswers[currentQuestion.id]) {
                 saveCurrentAnswer();
             }
@@ -300,7 +302,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
     const getQuestionStatus = (question) => {
         const hasAnswer = answers[question.id];
         const isFlagged = flaggedQuestions.has(question.id);
-        
+
         if (isFlagged) return 'flagged';
         if (hasAnswer) return 'answered';
         return 'unanswered';
@@ -313,6 +315,33 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
             default: return 'bg-gray-100 text-gray-800 border-gray-300';
         }
     };
+
+    // Error state: missing exam or attempt data
+    if (!hasValidData) {
+        return (
+            <AuthenticatedLayout user={auth?.user}>
+                <Head title="Exam Error" />
+                <div className="py-12">
+                    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                        <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                {!exam || !attempt
+                                    ? 'Unable to load exam data. Please go back and try again.'
+                                    : 'This exam has no questions available. Please contact your teacher or administrator.'}
+                            </AlertDescription>
+                        </Alert>
+                        <Button
+                            onClick={() => window.history.back()}
+                            className="mt-4"
+                        >
+                            Go Back
+                        </Button>
+                    </div>
+                </div>
+            </AuthenticatedLayout>
+        );
+    }
 
     if (timeLeft <= 0) {
         return (
@@ -350,13 +379,13 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                             <Clock className="h-4 w-4 mr-1" />
                             {formatTime(timeLeft)}
                         </Badge>
-                        <Badge variant={autoSaveStatus === 'saved' ? 'default' : 
-                                     autoSaveStatus === 'saving' ? 'secondary' :
-                                     autoSaveStatus === 'error' ? 'destructive' : 'outline'}>
-                            {autoSaveStatus === 'saving' ? 'Saving...' : 
-                             autoSaveStatus === 'saved' ? '✓ Saved' : 
-                             autoSaveStatus === 'error' ? '⚠ Save Error' : 
-                             autoSaveStatus === 'pending' ? '○ Unsaved' : 'Auto-save'}
+                        <Badge variant={autoSaveStatus === 'saved' ? 'default' :
+                            autoSaveStatus === 'saving' ? 'secondary' :
+                                autoSaveStatus === 'error' ? 'destructive' : 'outline'}>
+                            {autoSaveStatus === 'saving' ? 'Saving...' :
+                                autoSaveStatus === 'saved' ? '✓ Saved' :
+                                    autoSaveStatus === 'error' ? '⚠ Save Error' :
+                                        autoSaveStatus === 'pending' ? '○ Unsaved' : 'Auto-save'}
                         </Badge>
                     </div>
                 </div>
@@ -375,7 +404,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                     {questions.map((question, index) => {
                                         const status = getQuestionStatus(question);
                                         const isCurrent = index === currentQuestionIndex;
-                                        
+
                                         return (
                                             <button
                                                 key={question.id}
@@ -395,7 +424,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                         );
                                     })}
                                 </div>
-                                
+
                                 <div className="mt-4 space-y-2 text-xs">
                                     <div className="flex items-center space-x-2">
                                         <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
@@ -412,7 +441,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                 </div>
 
                                 {/* Manual Save Button */}
-                                <Button 
+                                <Button
                                     onClick={saveCurrentAnswer}
                                     disabled={autoSaveStatus === 'saving' || !currentQuestion || !answers[currentQuestion?.id] || answers[currentQuestion?.id] === lastSavedAnswers[currentQuestion?.id]}
                                     variant="outline"
@@ -422,7 +451,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                     {autoSaveStatus === 'saving' ? 'Saving...' : 'Save Answer'}
                                 </Button>
 
-                                <Button 
+                                <Button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
                                     className="w-full mt-6"
@@ -448,7 +477,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                                 </Badge>
                                             )}
                                         </div>
-                                        
+
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -474,7 +503,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                                     // Normalize options to handle different formats
                                                     const normalizeOptions = (options) => {
                                                         if (!options) return [];
-                                                        
+
                                                         if (Array.isArray(options)) {
                                                             // Check if it's an array of objects with 'text' property
                                                             if (options.length > 0 && typeof options[0] === 'object' && options[0] !== null && options[0].text) {
@@ -486,7 +515,7 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                                                 value: index
                                                             }));
                                                         }
-                                                        
+
                                                         if (typeof options === 'object') {
                                                             // Associative array: {A: 'Option A', B: 'Option B'}
                                                             return Object.entries(options).map(([key, text]) => ({
@@ -494,12 +523,12 @@ export default function Take({ exam, attempt, timeRemaining, student }) {
                                                                 value: key
                                                             }));
                                                         }
-                                                        
+
                                                         return [];
                                                     };
 
                                                     return normalizeOptions(currentQuestion.options).map((option, index) => (
-                                                        <label 
+                                                        <label
                                                             key={index}
                                                             className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
                                                         >
