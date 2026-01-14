@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
-export default function IdCardIndex({ auth, idCardSettings, classrooms, flash }) {
+export default function IdCardIndex({ auth, idCardSettings, classrooms, flash, schoolLogoUrl }) {
     const [activeType, setActiveType] = useState('student');
     const [activeTab, setActiveTab] = useState('front'); // front or back
 
@@ -516,6 +516,7 @@ export default function IdCardIndex({ auth, idCardSettings, classrooms, flash })
                                                     user={{ name: 'John Doe', admission_number: 'STD/2024/001', classroom: { name: 'Grade 10' } }}
                                                     settings={settings}
                                                     type={activeType}
+                                                    schoolLogoUrl={schoolLogoUrl}
                                                 />
                                             </div>
                                             {settings.show_back && (
@@ -534,6 +535,7 @@ export default function IdCardIndex({ auth, idCardSettings, classrooms, flash })
                                                     user={user}
                                                     settings={settings}
                                                     type={activeType}
+                                                    schoolLogoUrl={schoolLogoUrl}
                                                 />
                                                 {settings.show_back && (
                                                     <IdCardBack settings={settings} />

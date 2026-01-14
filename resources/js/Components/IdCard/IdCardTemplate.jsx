@@ -1,6 +1,7 @@
 import React from 'react';
+import { BuildingLibraryIcon } from '@heroicons/react/24/solid';
 
-export default function IdCardTemplate({ user, settings, type }) {
+export default function IdCardTemplate({ user, settings, type, schoolLogoUrl }) {
     // Default values if user or settings are missing properties
     const {
         layout = 'portrait',
@@ -60,11 +61,26 @@ export default function IdCardTemplate({ user, settings, type }) {
 
             {/* Header */}
             <div
-                className={`relative z-10 p-3 text-center text-white`}
+                className={`relative z-10 p-3 flex flex-col items-center justify-center text-white space-y-2`}
                 style={{ backgroundColor: primaryColor }}
             >
-                <h1 className="font-bold text-sm uppercase tracking-wider">{header_text}</h1>
-                <p className="text-[10px] opacity-90 uppercase tracking-widest">{sub_header_text}</p>
+                {/* School Logo */}
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center p-1 backdrop-blur-sm">
+                    {schoolLogoUrl ? (
+                        <img
+                            src={schoolLogoUrl}
+                            alt="School Logo"
+                            className="w-full h-full object-contain"
+                        />
+                    ) : (
+                        <BuildingLibraryIcon className="w-6 h-6 text-white/90" />
+                    )}
+                </div>
+
+                <div className="text-center">
+                    <h1 className="font-bold text-sm uppercase tracking-wider leading-tight">{header_text}</h1>
+                    <p className="text-[10px] opacity-90 uppercase tracking-widest">{sub_header_text}</p>
+                </div>
             </div>
 
             {/* Content Module */}

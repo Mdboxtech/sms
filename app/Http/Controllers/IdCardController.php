@@ -19,9 +19,13 @@ class IdCardController extends Controller
             'teacher_template' => Setting::getValue('id_card_teacher_template', $this->getDefaultTemplate('teacher')),
         ];
 
+        $logoPath = Setting::getValue('school_logo');
+        $schoolLogoUrl = $logoPath ? asset('storage/' . $logoPath) : null;
+
         return Inertia::render('Admin/IdCard/Index', [
             'idCardSettings' => $settings,
             'classrooms' => Classroom::all(),
+            'schoolLogoUrl' => $schoolLogoUrl,
         ]);
     }
 
