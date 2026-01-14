@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { 
-    CreditCard, 
-    Clock, 
-    CheckCircle, 
-    AlertTriangle, 
+import {
+    CreditCard,
+    Clock,
+    CheckCircle,
+    AlertTriangle,
     DollarSign,
     Calendar,
     Receipt,
@@ -18,7 +18,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
     const [selectedFee, setSelectedFee] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
-    
+
     const { data, setData, post, processing } = useForm({
         fee_id: '',
         amount: '',
@@ -80,7 +80,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
         const totalPaid = payments
             .filter(p => p.fee_id === fee.id && p.status === 'successful')
             .reduce((sum, p) => sum + parseFloat(p.amount), 0);
-        
+
         return Math.max(0, fee.amount - totalPaid);
     };
 
@@ -107,10 +107,16 @@ export default function Dashboard({ student, fees, payments, statistics }) {
     };
 
     const handleAmountChange = (value) => {
+        if (value === '') {
+            setPaymentAmount('');
+            setData('amount', '');
+            return;
+        }
+
         const numValue = parseFloat(value);
         const maxAmount = getAmountOwed(selectedFee);
-        
-        if (numValue <= maxAmount) {
+
+        if (!isNaN(numValue) && numValue <= maxAmount) {
             setPaymentAmount(value);
             setData('amount', value);
         }
@@ -119,7 +125,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
     return (
         <AuthenticatedLayout>
             <Head title="Payment Dashboard" />
-            
+
             <div className="space-y-6">
                 {/* Header */}
                 <div className="bg-white rounded-lg border p-6">
@@ -207,7 +213,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                             </button>
                         </div>
                     </div>
-                    
+
                     <div className="overflow-x-auto">
                         {fees && fees.length > 0 ? (
                             <table className="min-w-full divide-y divide-gray-200">
@@ -237,7 +243,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                         const totalPaid = payments
                                             .filter(p => p.fee_id === fee.id && p.status === 'successful')
                                             .reduce((sum, p) => sum + parseFloat(p.amount), 0);
-                                        
+
                                         return (
                                             <tr key={fee.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4">
@@ -324,7 +330,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                 <div className="text-sm text-gray-500">View all transactions</div>
                             </div>
                         </Link>
-                        
+
                         <Link
                             href={route('student.receipts.index')}
                             className="flex items-center p-4 border rounded-lg hover:bg-gray-50"
@@ -335,7 +341,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                 <div className="text-sm text-gray-500">Get payment receipts</div>
                             </div>
                         </Link>
-                        
+
                         <button className="flex items-center p-4 border rounded-lg hover:bg-gray-50 text-left">
                             <Calendar className="h-8 w-8 text-purple-600 mr-3" />
                             <div>
@@ -356,7 +362,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                 <CreditCard className="h-6 w-6 text-green-600" />
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 mt-4 text-center">Make Payment</h3>
-                            
+
                             <form onSubmit={submitPayment} className="mt-6 space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
@@ -366,7 +372,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                         Amount Owed: {formatCurrency(getAmountOwed(selectedFee))}
                                     </p>
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Payment Amount (₦)
@@ -386,7 +392,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                         You can make partial payments
                                     </p>
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Payment Method
@@ -400,7 +406,7 @@ export default function Dashboard({ student, fees, payments, statistics }) {
                                         <option value="bank_transfer">Direct Bank Transfer</option>
                                     </select>
                                 </div>
-                                
+
                                 <div className="flex space-x-3 pt-4">
                                     <button
                                         type="button"

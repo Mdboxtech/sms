@@ -22,7 +22,7 @@ class PaystackService
     {
         $this->secretKey = Setting::getValue('paystack_secret_key', '');
         $this->publicKey = Setting::getValue('paystack_public_key', '');
-        $this->baseUrl = Setting::getValue('paystack_payment_url', 'https://api.paystack.co');
+        $this->baseUrl = rtrim(Setting::getValue('paystack_payment_url', 'https://api.paystack.co'), '/');
         $this->currency = Setting::getValue('app_currency', 'NGN');
     }
 
@@ -35,7 +35,7 @@ class PaystackService
 
         $payload = [
             'email' => $data['email'],
-            'amount' => $data['amount'] * 100, // Convert to kobo
+            'amount' => (int) ($data['amount'] * 100), // Convert to kobo
             'currency' => $this->currency,
             'reference' => $data['reference'],
             'callback_url' => $data['callback_url'] ?? null,
