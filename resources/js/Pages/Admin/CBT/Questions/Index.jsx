@@ -7,14 +7,14 @@ import Card from '@/Components/UI/Card';
 import { FormInput, FormLabel, FormSelect } from '@/Components/UI';
 import { PenTool, CheckSquare, BarChart3 } from 'lucide-react';
 
-export default function Index({ 
-    auth, 
-    questions, 
-    subjects, 
-    teachers, 
-    filters, 
-    questionTypes, 
-    difficultyLevels 
+export default function Index({
+    auth,
+    questions,
+    subjects,
+    teachers,
+    filters,
+    questionTypes,
+    difficultyLevels
 }) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedSubject, setSelectedSubject] = useState(filters.subject_id || '');
@@ -60,7 +60,7 @@ export default function Index({
 
     const getBadgeClasses = (type, value) => {
         const baseClasses = 'inline-block px-2 py-1 text-xs font-semibold rounded-full';
-        
+
         if (type === 'difficulty') {
             switch (value) {
                 case 'easy': return baseClasses + ' bg-green-100 text-green-800';
@@ -69,7 +69,7 @@ export default function Index({
                 default: return baseClasses + ' bg-gray-100 text-gray-800';
             }
         }
-        
+
         if (type === 'question_type') {
             switch (value) {
                 case 'multiple_choice': return baseClasses + ' bg-blue-100 text-blue-800';
@@ -79,11 +79,11 @@ export default function Index({
                 default: return baseClasses + ' bg-gray-100 text-gray-800';
             }
         }
-        
+
         if (type === 'status') {
             return value ? baseClasses + ' bg-green-100 text-green-800' : baseClasses + ' bg-red-100 text-red-800';
         }
-        
+
         return baseClasses + ' bg-gray-100 text-gray-800';
     };
 
@@ -194,11 +194,17 @@ export default function Index({
                     {/* Quick Actions */}
                     <Card className="mb-6 p-6">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <Link href={route('admin.cbt.questions.create')}>
                                 <Button variant="primary" className="w-full justify-center">
                                     <PenTool className="w-4 h-4 mr-2" />
                                     Create Question
+                                </Button>
+                            </Link>
+                            <Link href={route('admin.cbt.questions.import')}>
+                                <Button variant="outline" className="w-full justify-center">
+                                    <BarChart3 className="w-4 h-4 mr-2" />
+                                    Import CSV
                                 </Button>
                             </Link>
                             <Link href={route('admin.cbt.exams.index')}>
@@ -338,7 +344,7 @@ export default function Index({
                                 data={questions.data}
                                 columns={columns}
                             />
-                            
+
                             {/* Pagination */}
                             {questions.links && (
                                 <div className="flex justify-center mt-6">
@@ -348,13 +354,12 @@ export default function Index({
                                                 key={index}
                                                 onClick={() => link.url && router.get(link.url)}
                                                 disabled={!link.url}
-                                                className={`px-3 py-2 text-sm rounded ${
-                                                    link.active 
-                                                        ? 'bg-blue-600 text-white' 
-                                                        : link.url 
-                                                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                                                className={`px-3 py-2 text-sm rounded ${link.active
+                                                        ? 'bg-blue-600 text-white'
+                                                        : link.url
+                                                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                }`}
+                                                    }`}
                                                 dangerouslySetInnerHTML={{ __html: link.label }}
                                             />
                                         ))}

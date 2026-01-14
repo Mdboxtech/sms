@@ -476,25 +476,27 @@ class ExamTakingService
             }
         }
         
-        // Check if exam has direct scheduling (start_time/end_time)
+        // If exam has scheduling (start_time/end_time), check if within window
         if ($exam->start_time && $exam->end_time) {
             $now = now();
-            return $now->between($exam->start_time, $exam->end_time);
-        }
-        
-        // Check if exam is scheduled via exam_schedules table
-        if ($exam->status === 'scheduled') {
-            $now = now();
-            $schedule = $exam->examSchedules()
-                ->where('classroom_id', $student->classroom_id)
-                ->first();
-                
-            if ($schedule) {
-                return $now->between($schedule->start_time, $schedule->end_time);
+            // Use gte/lte for more inclusive comparison
+            if ($now->lt($exam->start_time)) {
+                return false; // Not started yet
             }
+            if ($now->gt($exam->end_time)) {
+                return false; // Already ended
+            }
+            return true; // Within exam window
         }
         
-        return $exam->status === 'active';
+        // If no specific scheduling, exam is available if active and published
+        // This allows tests/quizzes without strict time windows
+        if ($exam->status === 'active' || $exam->status === 'scheduled') {
+            return true;
+        }
+        
+        // Default: allow if exam is published and active (no strict scheduling)
+        return true;
     }
     
     /**

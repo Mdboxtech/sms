@@ -5,12 +5,12 @@ import Button from '@/Components/UI/Button';
 import Card from '@/Components/UI/Card';
 import { FormInput, FormLabel, FormSelect, FormTextarea } from '@/Components/UI';
 
-export default function Create({ 
-    auth, 
-    subjects, 
-    questionTypes, 
+export default function Create({
+    auth,
+    subjects,
+    questionTypes,
     difficultyLevels,
-    classrooms 
+    classrooms
 }) {
     // Helper function to ensure options is always a valid array
     const ensureOptionsArray = (options) => {
@@ -19,7 +19,7 @@ export default function Create({
         if (typeof options === 'object') return Object.values(options);
         return [];
     };
-    
+
     const { data, setData, post, processing, errors, reset } = useForm({
         subject_id: '',
         classroom_id: '',
@@ -43,10 +43,10 @@ export default function Create({
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
-        // Validate based on question type
-        let formData = { ...data };
-        
+
+        // Transform data for backend
+        const submitData = { ...data };
+
         if (data.question_type === 'multiple_choice') {
             // Ensure at least one option is marked as correct
             const hasCorrectOption = data.options.some(option => option.is_correct);
@@ -54,22 +54,35 @@ export default function Create({
                 alert('Please mark at least one option as correct');
                 return;
             }
-            // Filter out empty options
-            formData.options = data.options.filter(option => option.text.trim() !== '');
+            // Filter out empty options and convert to array of strings
+            submitData.options = data.options
+                .filter(option => option.text.trim() !== '')
+                .map(opt => opt.text);
+
+            // Find and set the correct answer
+            const correctOption = data.options.find(opt => opt.is_correct);
+            submitData.correct_answer = correctOption ? correctOption.text : '';
         } else if (data.question_type === 'true_false') {
-            formData.options = [];
-        } else if (data.question_type === 'essay' || data.question_type === 'fill_blank') {
-            formData.options = [];
+            submitData.options = ['True', 'False'];
+            // correct_answer is already set via dropdown
+        } else if (data.question_type === 'essay') {
+            submitData.options = null;
+            // correct_answer is optional for essay
+        } else if (data.question_type === 'fill_blank') {
+            submitData.options = null;
+            // correct_answer is already set via textarea
         }
 
-        post(route('teacher.cbt.questions.store'), {
-            data: formData,
+        // Use router.post with transformed data
+        router.post(route('teacher.cbt.questions.store'), submitData, {
+            preserveScroll: true,
             onSuccess: () => {
                 alert('Question created successfully');
                 router.get(route('teacher.cbt.questions.index'));
             },
             onError: (errors) => {
                 console.error('Validation errors:', errors);
+                alert('Please check the form for errors');
             }
         });
     };
@@ -92,14 +105,14 @@ export default function Create({
     const updateOption = (index, field, value) => {
         const newOptions = [...data.options];
         newOptions[index][field] = value;
-        
+
         // If marking as correct and it's multiple choice, unmark others
         if (field === 'is_correct' && value && data.question_type === 'multiple_choice') {
             newOptions.forEach((option, i) => {
                 if (i !== index) option.is_correct = false;
             });
         }
-        
+
         setData('options', newOptions);
     };
 
@@ -115,7 +128,7 @@ export default function Create({
             ] : [],
             correct_answer: type === 'true_false' ? 'true' : ''
         }));
-        
+
         if (type === 'multiple_choice') {
             setOptionsCount(4);
         }
@@ -129,7 +142,7 @@ export default function Create({
                     <h2 className="font-semibold text-xl text-gray-800 leading-tight">
                         Create New Question
                     </h2>
-                    <Button 
+                    <Button
                         variant="outline"
                         onClick={() => router.get(route('teacher.cbt.questions.index'))}
                     >
@@ -146,7 +159,7 @@ export default function Create({
                         {/* Basic Information */}
                         <Card className="space-y-4">
                             <h3 className="text-lg font-medium">Basic Information</h3>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <FormLabel className="block text-sm font-medium text-gray-700 mb-2">
@@ -258,7 +271,7 @@ export default function Create({
                         {/* Question Content */}
                         <Card className="space-y-4">
                             <h3 className="text-lg font-medium">Question Content</h3>
-                            
+
                             <div>
                                 <FormLabel className="block text-sm font-medium text-gray-700 mb-2">
                                     Question Text *
@@ -295,7 +308,7 @@ export default function Create({
                                             </Button>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="space-y-3">
                                         {ensureOptionsArray(data.options).map((option, index) => (
                                             <div key={index} className="flex items-center space-x-3 p-3 border rounded-lg">
@@ -366,7 +379,7 @@ export default function Create({
                                         className="w-full"
                                         rows={3}
                                         placeholder={
-                                            data.question_type === 'essay' 
+                                            data.question_type === 'essay'
                                                 ? 'Provide a model answer or marking scheme...'
                                                 : 'Enter the correct answer...'
                                         }
@@ -399,7 +412,7 @@ export default function Create({
                         {/* Additional Settings */}
                         <Card className="space-y-4">
                             <h3 className="text-lg font-medium">Settings</h3>
-                            
+
                             <div className="flex items-center space-x-3">
                                 <input
                                     type="checkbox"

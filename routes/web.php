@@ -233,6 +233,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // CBT (Computer-Based Testing) Management
         Route::prefix('cbt')->name('cbt.')->group(function () {
             Route::resource('questions', AdminCBTQuestionController::class);
+            Route::get('questions-import', [AdminCBTQuestionController::class, 'importPage'])->name('questions.import');
+            Route::post('questions-import', [AdminCBTQuestionController::class, 'import'])->name('questions.import.process');
+            Route::get('questions-template', [AdminCBTQuestionController::class, 'downloadTemplate'])->name('questions.template');
+            
             Route::resource('exams', AdminCBTExamController::class);
             Route::post('exams/{exam}/publish', [AdminCBTExamController::class, 'publish'])->name('exams.publish');
             Route::post('exams/{exam}/unpublish', [AdminCBTExamController::class, 'unpublish'])->name('exams.unpublish');

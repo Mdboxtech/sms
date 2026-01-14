@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/UI/Button';
 import Card from '@/Components/UI/Card';
 import { FormInput, FormLabel, FormSelect } from '@/Components/UI';
 
-export default function Create({ 
-    auth, 
-    subjects, 
-    teachers, 
-    questionTypes, 
-    difficultyLevels 
+export default function Create({
+    auth,
+    subjects,
+    teachers,
+    questionTypes,
+    difficultyLevels
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         subject_id: '',
@@ -33,14 +33,14 @@ export default function Create({
     const handleOptionChange = (index, field, value) => {
         const newOptions = [...data.options];
         newOptions[index][field] = value;
-        
+
         // If marking as correct and it's multiple choice, unmark others
         if (field === 'is_correct' && value && data.question_type === 'multiple_choice') {
             newOptions.forEach((option, i) => {
                 if (i !== index) option.is_correct = false;
             });
         }
-        
+
         setData('options', newOptions);
     };
 
@@ -57,7 +57,7 @@ export default function Create({
 
     const handleQuestionTypeChange = (value) => {
         setData('question_type', value);
-        
+
         // Reset options based on question type
         if (value === 'true_false') {
             setData('options', [
@@ -78,7 +78,7 @@ export default function Create({
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         // Validation
         if (data.question_type === 'multiple_choice' || data.question_type === 'true_false') {
             const hasCorrectAnswer = data.options.some(option => option.is_correct);
@@ -87,12 +87,31 @@ export default function Create({
                 return;
             }
         }
-        
-        post(route('admin.cbt.questions.store'), {
+
+        // Transform data for backend
+        const submitData = { ...data };
+
+        if (data.question_type === 'multiple_choice' || data.question_type === 'true_false') {
+            // Convert options to array of strings
+            submitData.options = data.options.map(opt => opt.text);
+
+            // Find and set the correct answer
+            const correctOption = data.options.find(opt => opt.is_correct);
+            submitData.correct_answer = correctOption ? correctOption.text : '';
+        } else {
+            // For essay/fill_blank, no options needed
+            submitData.options = null;
+            submitData.correct_answer = data.question_type === 'essay' ? null : '';
+        }
+
+        // Use router.post directly with transformed data
+        router.post(route('admin.cbt.questions.store'), submitData, {
+            preserveScroll: true,
             onSuccess: () => {
                 alert('Question created successfully');
             },
             onError: (errors) => {
+                console.error('Validation errors:', errors);
                 alert('Please check the form for errors');
             }
         });
@@ -304,7 +323,7 @@ export default function Create({
                                             <input
                                                 type="checkbox"
                                                 checked={option.is_correct}
-                                                onChange={(e) => 
+                                                onChange={(e) =>
                                                     handleOptionChange(index, 'is_correct', e.target.checked)
                                                 }
                                                 className="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500"
@@ -312,7 +331,7 @@ export default function Create({
                                             <FormInput
                                                 placeholder={`Option ${index + 1}`}
                                                 value={option.text}
-                                                onChange={(e) => 
+                                                onChange={(e) =>
                                                     handleOptionChange(index, 'text', e.target.value)
                                                 }
                                                 className="flex-1"

@@ -374,4 +374,182 @@ class QuestionController extends Controller
             'success_rate' => $successRate
         ]);
     }
+
+    /**
+     * Show the import page
+     */
+    public function importPage()
+    {
+        $teacher = Teacher::where('user_id', Auth::id())->firstOrFail();
+        
+        // Get subjects that this teacher teaches
+        $teacherSubjects = Subject::whereHas('teachers', function ($q) use ($teacher) {
+            $q->where('teacher_id', $teacher->id);
+        })->orderBy('name')->get();
+
+        return Inertia::render('Teacher/CBT/Questions/Import', [
+            'subjects' => $teacherSubjects,
+            'questionTypes' => [
+                'multiple_choice' => 'Multiple Choice',
+                'true_false' => 'True/False',
+                'essay' => 'Essay',
+                'fill_blank' => 'Fill in the Blank'
+            ],
+            'difficultyLevels' => [
+                'easy' => 'Easy',
+                'medium' => 'Medium',
+                'hard' => 'Hard'
+            ]
+        ]);
+    }
+
+    /**
+     * Download import template
+     */
+    public function downloadTemplate()
+    {
+        $headers = [
+            'question_text',
+            'question_type',
+            'difficulty_level',
+            'marks',
+            'option_a',
+            'option_b',
+            'option_c',
+            'option_d',
+            'correct_answer',
+            'explanation'
+        ];
+
+        $exampleRow = [
+            'What is 2 + 2?',
+            'multiple_choice',
+            'easy',
+            '5',
+            '3',
+            '4',
+            '5',
+            '6',
+            'B',
+            '2 + 2 = 4'
+        ];
+
+        $callback = function() use ($headers, $exampleRow) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+            fputcsv($file, $exampleRow);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="questions_import_template.csv"',
+        ]);
+    }
+
+    /**
+     * Process the import
+     */
+    public function import(Request $request)
+    {
+        $teacher = Teacher::where('user_id', Auth::id())->firstOrFail();
+        
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
+            'subject_id' => 'required|exists:subjects,id',
+        ]);
+
+        $file = $request->file('file');
+        $subjectId = $request->subject_id;
+        $teacherId = $teacher->user_id;
+
+        $imported = 0;
+        $errors = [];
+        $row = 0;
+
+        // Open and parse CSV
+        if (($handle = fopen($file->getPathname(), 'r')) !== false) {
+            // Skip header row
+            $headers = fgetcsv($handle);
+            
+            while (($data = fgetcsv($handle)) !== false) {
+                $row++;
+                
+                if (count($data) < 9) {
+                    $errors[] = "Row {$row}: Insufficient columns";
+                    continue;
+                }
+
+                try {
+                    $questionText = trim($data[0] ?? '');
+                    $questionType = strtolower(trim($data[1] ?? 'multiple_choice'));
+                    $difficultyLevel = strtolower(trim($data[2] ?? 'medium'));
+                    $marks = intval($data[3] ?? 5);
+                    $optionA = trim($data[4] ?? '');
+                    $optionB = trim($data[5] ?? '');
+                    $optionC = trim($data[6] ?? '');
+                    $optionD = trim($data[7] ?? '');
+                    $correctAnswer = strtoupper(trim($data[8] ?? 'A'));
+                    $explanation = trim($data[9] ?? '');
+
+                    if (empty($questionText)) {
+                        $errors[] = "Row {$row}: Question text is required";
+                        continue;
+                    }
+
+                    // Build options array
+                    $options = null;
+                    $correctAnswerValue = '';
+                    
+                    if ($questionType === 'multiple_choice') {
+                        $options = array_filter([$optionA, $optionB, $optionC, $optionD]);
+                        $answerMap = ['A' => $optionA, 'B' => $optionB, 'C' => $optionC, 'D' => $optionD];
+                        $correctAnswerValue = $answerMap[$correctAnswer] ?? $optionA;
+                    } elseif ($questionType === 'true_false') {
+                        $options = ['True', 'False'];
+                        $correctAnswerValue = in_array(strtolower($correctAnswer), ['true', 't', 'a']) ? 'True' : 'False';
+                    } else {
+                        $correctAnswerValue = $correctAnswer;
+                    }
+
+                    // Validate question type
+                    if (!in_array($questionType, ['multiple_choice', 'true_false', 'essay', 'fill_blank'])) {
+                        $questionType = 'multiple_choice';
+                    }
+
+                    // Validate difficulty
+                    if (!in_array($difficultyLevel, ['easy', 'medium', 'hard'])) {
+                        $difficultyLevel = 'medium';
+                    }
+
+                    Question::create([
+                        'subject_id' => $subjectId,
+                        'teacher_id' => $teacherId,
+                        'question_text' => $questionText,
+                        'question_type' => $questionType,
+                        'difficulty_level' => $difficultyLevel,
+                        'marks' => $marks,
+                        'options' => $options,
+                        'correct_answer' => $correctAnswerValue,
+                        'explanation' => $explanation ?: null,
+                        'is_active' => true,
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$row}: " . $e->getMessage();
+                }
+            }
+            fclose($handle);
+        }
+
+        $message = "{$imported} questions imported successfully.";
+        if (count($errors) > 0) {
+            $message .= " " . count($errors) . " rows had errors.";
+        }
+
+        return redirect()->route('teacher.cbt.questions.index')
+            ->with('success', $message)
+            ->with('import_errors', array_slice($errors, 0, 10));
+    }
 }

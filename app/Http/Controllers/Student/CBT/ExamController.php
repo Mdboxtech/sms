@@ -588,23 +588,30 @@ class ExamController extends Controller
                 : 'You have already started this exam.';
         }
 
-        // Check if exam is scheduled
-        if (!$exam->start_time || !$exam->end_time) {
-            return 'This exam has not been scheduled yet.';
-        }
+        // Check time-based restrictions only if exam has scheduling
+        if ($exam->start_time && $exam->end_time) {
+            $now = now();
+            
+            // Check if exam hasn't started yet
+            if ($now->lt($exam->start_time)) {
+                return 'This exam is not yet available. It will start on ' . 
+                       $exam->start_time->format('M j, Y \a\t g:i A');
+            }
 
-        $now = now();
+            // Check if exam has ended
+            if ($now->gt($exam->end_time)) {
+                return 'This exam has ended. It was available until ' . 
+                       $exam->end_time->format('M j, Y \a\t g:i A');
+            }
+        }
         
-        // Check if exam hasn't started yet
-        if ($now->lt($exam->start_time)) {
-            return 'This exam is not yet available. It will start on ' . 
-                   $exam->start_time->format('M j, Y \a\t g:i A');
+        // Check if exam is not active or published
+        if (!$exam->is_active) {
+            return 'This exam is currently not active.';
         }
-
-        // Check if exam has ended
-        if ($now->gt($exam->end_time)) {
-            return 'This exam has ended. It was available until ' . 
-                   $exam->end_time->format('M j, Y \a\t g:i A');
+        
+        if (!$exam->is_published) {
+            return 'This exam has not been published yet.';
         }
 
         // If we get here and canTake is false, it might be a permission issue
